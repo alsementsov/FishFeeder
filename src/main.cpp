@@ -1,0 +1,249 @@
+#define Version 20 //Version
+#include <Arduino.h>
+#include <HX711.h>
+#include <WiFi.h>
+#include <RTClib.h>
+#include <EEPROM.h>
+#include <ArduinoJson.h>
+#include "feeder.h"
+
+RTC_DS3231 rtc;
+WiFiServer server(80);
+struct Parameters jdata;
+HX711 scale;
+struct timings Feed_timings;
+unsigned long t_start_sample=0; 
+unsigned long tnow =0;
+int N = 0;
+unsigned long delta =0;
+long Weight_before;
+uint16_t NoChanging_cnt=0;
+bool firstloop;
+bool Start_with_AP=0;
+bool feed = 0;
+bool flag_calc = 0;
+long Consumption_temp;
+unsigned long Tstart_clean=0;
+long Wstart_clean=0;
+
+///////////////////////////// SETUP ////////////////////////////////////////////////////
+void setup() {
+  //Обнуление статуса ошибок при старта
+  Serial.begin(115200);
+  pinMode(LEDPIN, OUTPUT); 
+  pinMode(2, OUTPUT); 
+  EEPROM.begin(64);     // set the LED pin mode
+  delay(10);
+  //Version
+  Serial.print("Version: ");Serial.println(Version);
+  // RTC starting
+  RTC_init(&jdata,&rtc);
+  //////// READ PARAMETERS from EEPROM ////////
+  jdata = ReadParameters();
+  Serial.print("ID: ");Serial.println(jdata.ID_f);
+  // WIFi start...
+  unsigned long t = millis();
+  while ((Start_with_AP==0)&&(millis()-t<10000))
+  {
+    Start_with_AP = WiFi_connect(&jdata, &server);
+  }
+  // Расчет таймингов кормления
+  Calculate_timings(&jdata,&Feed_timings);
+  // Настройка ТЕНЗОДАТЧИКА
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+  delay(1000); 
+  if (scale.is_ready()) {     // сбрасываем значения веса на датчике в 0   
+    scale.set_offset(jdata.Offset);
+    scale.set_scale(jdata.CalFactor);  
+    Serial.print("Scale parameters init:");Serial.print(jdata.Offset);Serial.print("/");Serial.println(jdata.CalFactor);  
+  }
+  else  {  
+    bitSet(jdata.Status,STATUS_ERROR_SCALE);// Запись ошибки ВЕСОВ
+    Serial.println("-- Scale connection ERROR ! --");
+  }
+  firstloop = 1;
+  if (WiFi.getAutoConnect() != true) WiFi.setAutoConnect(true);  //on power-on automatically connects to last used hwAP
+  WiFi.setAutoReconnect(true);
+  Consumption_temp = jdata.Consumption;
+}
+//////////////////////////////// LOOP ////////////////////////////////////////////////////////
+void loop() {
+  // ******** FEEDING **********
+  // if there are no Clean or global STOP
+  if ((bitRead(jdata.Status,STATUS_CLEAN)==0)&&(bitRead(jdata.Status,STATUS_STOP)==0)) 
+  {
+      // if counter is null -> first sample (start day) 
+      if (N==0){
+        DateTime rtctime = rtc.now();
+        unsigned long urtctime = rtctime.unixtime();
+        urtctime %= 86400;
+      // Check active period of day
+      if ((urtctime >= Feed_timings.Tstart) && (urtctime < (Feed_timings.Tend-(Feed_timings.T/1000))))
+      {
+        //START feeding
+        jdata.Weight = MeausureWeight(&scale);
+        Serial.print("Weight at starting = ");Serial.println(jdata.Weight);
+        Weight_before = jdata.Weight;
+        N = ceil((urtctime-Feed_timings.Tstart)/Feed_timings.T)+1;
+        Serial.print("........................Nfeed = ");Serial.println(N);
+        Feed_timings.WperSample_cur = Feed_timings.WperSample;// Weight of samples to default value
+        Feed_timings.Duration = (Feed_timings.WperSample_cur*1000)/jdata.Consumption;// Default duration
+        Serial.print("WperSample_cur = ");Serial.print(Feed_timings.WperSample_cur);
+        Serial.print(" / Duration = ");Serial.println(Feed_timings.Duration);      
+        t_start_sample= millis(); // Save start time
+        digitalWrite(LEDPIN,HIGH);
+        digitalWrite(2,HIGH);
+        feed=1;
+      }
+    }
+    // Обычный выброс
+    else if (N <= jdata.NperDay){
+      unsigned long tnow = millis();
+      delta = long(tnow - t_start_sample); //Calc delta between start and now
+      // Старт выброса
+      if (delta >= Feed_timings.T){ // Duration between samples more than nominal
+        //Check overload by abs-time
+        DateTime rtctime = rtc.now();
+        long urtctime = rtctime.unixtime();
+        urtctime %= 86400;
+        //Serial.println("Delta > T");
+        if (urtctime <= Feed_timings.Tend){
+          t_start_sample = tnow; // Start new sample and save timer value
+          N++; //
+          Weight_before = MeausureWeight(&scale);//Save weight before sample
+          Serial.print("Weight_before = ");Serial.println(Weight_before);
+          jdata.Weight = Weight_before;
+          digitalWrite(LEDPIN,HIGH);
+          digitalWrite(2,HIGH);
+          feed=1;
+          Serial.print("........................Nfeed = ");Serial.println(N,DEC); 
+        } 
+        else{ //if more than day - switch off 
+          N=0;
+          digitalWrite(LEDPIN,LOW);
+          digitalWrite(2,LOW);
+          if (feed==1)
+          {
+            feed=0;
+            Serial.println("-> STOP !");
+          }
+        }
+      }
+      //End of sample
+      else if (delta >= Feed_timings.Duration)
+      {
+        if (feed==1)
+        {
+          digitalWrite(LEDPIN,LOW);
+          digitalWrite(2,LOW);
+          feed = 0;
+          flag_calc = 1;
+        }
+        if (delta > (Feed_timings.Duration + DELAY_FOR_SCALE)&&(flag_calc==1))
+        {
+          flag_calc=0;
+          jdata.Weight = MeausureWeight(&scale);
+          Serial.print("Weight after = ");Serial.println(jdata.Weight);
+          long wdelta = Weight_before-jdata.Weight; //Weight per current feeds
+          Serial.print("Wdelta = ");Serial.println(wdelta);
+          if (Feed_timings.Duration!=0)
+          {
+            Consumption_temp = (wdelta*1000)/Feed_timings.Duration;
+            Serial.print("Consumption_temp = ");Serial.println(Consumption_temp);
+          }
+          if (Consumption_temp>100)
+          {
+            if(bitRead(jdata.Status,STATUS_ADJUSTMENT)==1)
+            {
+             jdata.Consumption = Kalman_filter(Consumption_temp,Feed_timings.Qr);
+             Serial.print("Сonsumption:");Serial.println(jdata.Consumption);
+            }
+            NoChanging_cnt=0;
+            bitClear(jdata.Status,STATUS_ERROR_NOCHANGING);//Restore error of feedings
+          }
+          else if  (NoChanging_cnt >= 5)
+          {
+            bitSet(jdata.Status,STATUS_ERROR_NOCHANGING);//Write error of feedings
+            Serial.println("-> ERROR_NOCHANGING !");
+          }
+          else
+          {
+            NoChanging_cnt++;
+            Serial.print("NO-CHANGING COUNTER = ");Serial.println(NoChanging_cnt);
+          }
+          //if (jdata.Consumption>100)
+          //{
+          Feed_timings.WperSample_cur = Feed_timings.WperSample + Feed_timings.WperSample_cur - wdelta;//Recalc weight of next samples
+          Serial.print("WperSample_cur:");Serial.print(Feed_timings.WperSample_cur);
+          if (Feed_timings.WperSample_cur > 0)
+          {
+            Feed_timings.Duration = (Feed_timings.WperSample_cur*1000)/jdata.Consumption;// Recalc next duration 
+            if (Feed_timings.Duration >= Feed_timings.T)
+              Feed_timings.Duration = Feed_timings.T-3500;
+          }
+          else 
+            Feed_timings.Duration = 0;
+          Serial.print(" / Duration:");Serial.println(Feed_timings.Duration);
+        }
+      }
+    } 
+    // N>Nperday = if counter over - null. Stop feeding
+    else {
+      digitalWrite(LEDPIN,LOW); 
+      digitalWrite(2,LOW);
+      Serial.println("-> STOP DAY !");
+      N=0;
+      feed=0;
+      // Save Consumption in the end of day
+      /*if (bitRead(jdata.Status,STATUS_ADJUSTMENT)==1)
+      {
+        EEPROM.begin(11);
+        EEPROM.write(9,highByte(jdata.Consumption));
+        EEPROM.write(10,lowByte(jdata.Consumption));
+        EEPROM.commit();
+        Serial.print("Update consumption = ");Serial.println(String(jdata.Consumption));
+      }*/
+    }
+  }
+  ////////// SMART CLEANING ///////////
+  else if (bitRead(jdata.Status,STATUS_CLEAN)==1)
+  {
+    if (Tstart_clean==0)
+    {
+      Tstart_clean = millis();
+      Wstart_clean = MeausureWeight(&scale);
+      Serial.println(Wstart_clean);
+      digitalWrite(LEDPIN,HIGH);
+      digitalWrite(2,HIGH);
+    }
+    else if (((millis()-Tstart_clean)>=T_CLEAN))
+    {
+      digitalWrite(LEDPIN,LOW);
+      digitalWrite(2,LOW);
+      delay(1000);
+      long Wcur = MeausureWeight(&scale);
+      Serial.println(Wcur);
+      if ((Wstart_clean-Wcur) <= TH_CLEAN)
+      {
+        bitClear(jdata.Status,STATUS_CLEAN);
+        Serial.print("-> END CLEANING !");
+      }
+      Tstart_clean=0;
+    }
+  }
+  ///////////////////// WIFI ///////////////////////////
+  if (firstloop ==1)  {firstloop = 0;}
+  else if (Start_with_AP==0)
+    Start_with_AP =  WiFi_connect(&jdata, &server);
+  else if (WiFi.status() != WL_CONNECTED)
+  {
+    WiFi.reconnect(); 
+    Serial.println("AP is lost. Trying to AP reconnect...");
+  }
+  else
+  {
+    String s;
+    s = Client_connect(&rtc,&jdata,&server,&scale);
+    ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
+  } 
+}
