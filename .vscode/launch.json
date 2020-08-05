@@ -12,7 +12,7 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-            "executable": "g:/FISH_FEEDER/.pio/build/nodemcu-32s/firmware.elf",
+            "executable": "g:/FISH_FEEDER on board/.pio/build/nodemcu-32s/firmware.elf",
             "toolchainBinDir": "C:/.platformio/packages/toolchain-xtensa32/bin",
             "preLaunchTask": {
                 "type": "PlatformIO",
@@ -24,7 +24,7 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-            "executable": "g:/FISH_FEEDER/.pio/build/nodemcu-32s/firmware.elf",
+            "executable": "g:/FISH_FEEDER on board/.pio/build/nodemcu-32s/firmware.elf",
             "toolchainBinDir": "C:/.platformio/packages/toolchain-xtensa32/bin",
             "internalConsoleOptions": "openOnSessionStart"
         }

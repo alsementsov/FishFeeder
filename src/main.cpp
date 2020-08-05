@@ -31,7 +31,14 @@ void setup() {
   //Обнуление статуса ошибок при старта
   Serial.begin(115200);
   pinMode(LEDPIN, OUTPUT); 
-  pinMode(2, OUTPUT); 
+  pinMode(LED1, OUTPUT);
+  pinMode(LED2, OUTPUT);
+  pinMode(LED3, OUTPUT);
+  pinMode(LEDEXT, OUTPUT);
+  digitalWrite(LED1,HIGH);
+  digitalWrite(LED2,HIGH);  
+  digitalWrite(LED3,HIGH);
+  digitalWrite(LEDEXT,HIGH);  
   EEPROM.begin(64);     // set the LED pin mode
   delay(10);
   //Version
@@ -67,7 +74,7 @@ void setup() {
   Consumption_temp = jdata.Consumption;
 }
 //////////////////////////////// LOOP ////////////////////////////////////////////////////////
-void loop() {
+void loop() { 
   // ******** FEEDING **********
   // if there are no Clean or global STOP
   if ((bitRead(jdata.Status,STATUS_CLEAN)==0)&&(bitRead(jdata.Status,STATUS_STOP)==0)) 
@@ -195,14 +202,14 @@ void loop() {
       N=0;
       feed=0;
       // Save Consumption in the end of day
-      /*if (bitRead(jdata.Status,STATUS_ADJUSTMENT)==1)
-      {
-        EEPROM.begin(11);
-        EEPROM.write(9,highByte(jdata.Consumption));
-        EEPROM.write(10,lowByte(jdata.Consumption));
-        EEPROM.commit();
-        Serial.print("Update consumption = ");Serial.println(String(jdata.Consumption));
-      }*/
+      //if (bitRead(jdata.Status,STATUS_ADJUSTMENT)==1)
+      //{
+        //EEPROM.begin(11);
+       // EEPROM.write(9,highByte(jdata.Consumption));
+        //EEPROM.write(10,lowByte(jdata.Consumption));
+        //EEPROM.commit();
+        //Serial.print("Update consumption = ");Serial.println(String(jdata.Consumption));
+      //}
     }
   }
   ////////// SMART CLEANING ///////////
@@ -245,5 +252,5 @@ void loop() {
     String s;
     s = Client_connect(&rtc,&jdata,&server,&scale);
     ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
-  } 
+  }
 }

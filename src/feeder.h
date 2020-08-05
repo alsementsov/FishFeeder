@@ -6,6 +6,10 @@
 using namespace std;
 
 #define LEDPIN 15
+#define LEDEXT 2
+#define LED1 4
+#define LED2 12
+#define LED3 14
 #define ETALON 194 //My Lenovo smartphone                                                   // указываем эталонный вес
 #define CONVERTION_RATE 0.03527
 #define LOADCELL_DOUT_PIN 5

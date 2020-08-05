@@ -6,7 +6,7 @@
         {
             "name": "Win32",
             "includePath": [
-                "C:/.platformio/lib/ArduinoJson_ID64/src",
+                "C:/.platformio/lib/ArduinoJson/src",
                 "C:/.platformio/lib/HX711_ID1100/src",
                 "C:/.platformio/lib/RTClib",
                 "C:/.platformio/packages/framework-arduinoespressif32/libraries/EEPROM/src",
@@ -36,8 +36,8 @@
                 "C:/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                 "C:/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
                 "C:/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
-                "g:/FISH_FEEDER/include",
-                "g:/FISH_FEEDER/src",
+                "g:/FISH_FEEDER on board/include",
+                "g:/FISH_FEEDER on board/src",
                 "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/config",
                 "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_trace",
                 "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_update",
@@ -102,7 +102,7 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "C:/.platformio/lib/ArduinoJson_ID64/src",
+                    "C:/.platformio/lib/ArduinoJson/src",
                     "C:/.platformio/lib/HX711_ID1100/src",
                     "C:/.platformio/lib/RTClib",
                     "C:/.platformio/packages/framework-arduinoespressif32/libraries/EEPROM/src",
@@ -132,8 +132,8 @@
                     "C:/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                     "C:/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
                     "C:/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
-                    "g:/FISH_FEEDER/include",
-                    "g:/FISH_FEEDER/src",
+                    "g:/FISH_FEEDER on board/include",
+                    "g:/FISH_FEEDER on board/src",
                     "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/config",
                     "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_trace",
                     "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_update",
