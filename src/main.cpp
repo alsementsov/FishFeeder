@@ -30,15 +30,16 @@ long Wstart_clean=0;
 void setup() {
   //Обнуление статуса ошибок при старта
   Serial.begin(115200);
-  pinMode(LEDPIN, OUTPUT); 
+  pinMode(MOTORPIN, OUTPUT); 
   pinMode(LED1, OUTPUT);
   pinMode(LED2, OUTPUT);
   pinMode(LED3, OUTPUT);
   pinMode(LEDEXT, OUTPUT);
-  digitalWrite(LED1,HIGH);
-  digitalWrite(LED2,HIGH);  
+  digitalWrite(LED1,LOW);
+  digitalWrite(LED2,LOW);
   digitalWrite(LED3,HIGH);
-  digitalWrite(LEDEXT,HIGH);  
+  digitalWrite(LEDEXT,LOW);
+   
   EEPROM.begin(64);     // set the LED pin mode
   delay(10);
   //Version
@@ -98,14 +99,14 @@ void loop() {
         Serial.print("WperSample_cur = ");Serial.print(Feed_timings.WperSample_cur);
         Serial.print(" / Duration = ");Serial.println(Feed_timings.Duration);      
         t_start_sample= millis(); // Save start time
-        digitalWrite(LEDPIN,HIGH);
-        digitalWrite(2,HIGH);
+        digitalWrite(MOTORPIN,HIGH);
+        digitalWrite(LED1,HIGH);
         feed=1;
       }
     }
     // Обычный выброс
     else if (N <= jdata.NperDay){
-      unsigned long tnow = millis();
+      unsigned long tnow =  millis();
       delta = long(tnow - t_start_sample); //Calc delta between start and now
       // Старт выброса
       if (delta >= Feed_timings.T){ // Duration between samples more than nominal
@@ -120,15 +121,15 @@ void loop() {
           Weight_before = MeausureWeight(&scale);//Save weight before sample
           Serial.print("Weight_before = ");Serial.println(Weight_before);
           jdata.Weight = Weight_before;
-          digitalWrite(LEDPIN,HIGH);
-          digitalWrite(2,HIGH);
+          digitalWrite(MOTORPIN,HIGH);
+          digitalWrite(LED1,HIGH);
           feed=1;
           Serial.print("........................Nfeed = ");Serial.println(N,DEC); 
         } 
         else{ //if more than day - switch off 
           N=0;
-          digitalWrite(LEDPIN,LOW);
-          digitalWrite(2,LOW);
+          digitalWrite(MOTORPIN,LOW);
+          digitalWrite(LED1,LOW);
           if (feed==1)
           {
             feed=0;
@@ -141,8 +142,8 @@ void loop() {
       {
         if (feed==1)
         {
-          digitalWrite(LEDPIN,LOW);
-          digitalWrite(2,LOW);
+          digitalWrite(MOTORPIN,LOW);
+          digitalWrite(LED1,LOW);
           feed = 0;
           flag_calc = 1;
         }
@@ -196,8 +197,8 @@ void loop() {
     } 
     // N>Nperday = if counter over - null. Stop feeding
     else {
-      digitalWrite(LEDPIN,LOW); 
-      digitalWrite(2,LOW);
+      digitalWrite(MOTORPIN,LOW); 
+      digitalWrite(LED1,LOW);
       Serial.println("-> STOP DAY !");
       N=0;
       feed=0;
@@ -220,13 +221,13 @@ void loop() {
       Tstart_clean = millis();
       Wstart_clean = MeausureWeight(&scale);
       Serial.println(Wstart_clean);
-      digitalWrite(LEDPIN,HIGH);
-      digitalWrite(2,HIGH);
+      digitalWrite(MOTORPIN,HIGH);
+      digitalWrite(LED1,HIGH);
     }
     else if (((millis()-Tstart_clean)>=T_CLEAN))
     {
-      digitalWrite(LEDPIN,LOW);
-      digitalWrite(2,LOW);
+      digitalWrite(MOTORPIN,LOW);
+      digitalWrite(LED1,LOW);
       delay(1000);
       long Wcur = MeausureWeight(&scale);
       Serial.println(Wcur);

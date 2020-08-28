@@ -168,31 +168,33 @@ void Calculate_timings(Parameters *jdata, timings *Feed_timings){
 }
 void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings,HX711 *scale)
 {
-  int tempi;
+  int cmd;
+  int ID;
   if (*s!=""){
     Serial.print("JSON request = ");
     Serial.println(*s); 
-    DynamicJsonDocument doc(512);
+    DynamicJsonDocument doc(256);
     DeserializationError error = deserializeJson(doc, *s);
-    if (error)  {Serial.println("error");}
-    tempi = doc["ID"];
-    tempi = doc["Command"];
-    Serial.print("Command=");Serial.println(tempi); 
+    if (error)  {Serial.println("Json error");}
+    cmd = doc["Command"];
+    ID = doc["ID"];
+    Serial.print("ID=");Serial.print(ID); Serial.print(" / CMD=");Serial.println(cmd); 
       // Обработка запроса к этому устройству
-    if (jdata->ID_f == doc["ID"]){
+    if (jdata->ID_f == ID){
         // 1 - Обновление времени (TIME UPDATE)
-        if (doc["Command"] == 1){
-          rtc->adjust(DateTime(doc["Year"], doc["Month"], doc["Day"], doc["Hour"], doc["Minute"], 0));
+        if (cmd == 1){
+          rtc->adjust(DateTime(doc["Data"]["Year"], doc["Data"]["Month"], doc["Data"]["Day"], doc["Data"]["Hour"], doc["Data"]["Minute"], 0));
           Serial.println(" -> Time is updated");
         }
         // 2 - Обновление режима кормления (FEEDING SETTINGS)
-        else if (doc["Command"] == 2){
-        jdata->Hour_start = doc["StartHour"];
-        jdata->Minute_start = doc["StartMinute"];
-        jdata->Hour_end = doc["EndHour"];
-        jdata->Minute_end = doc["EndMinute"];
-        jdata->NperDay = doc["Freq_day"];
-        jdata->WperDay = doc["Weight_day"];
+        else if (cmd == 2){
+        jdata->Hour_start = doc["Data"]["StartHour"];
+        Serial.println(jdata->Hour_start);
+        jdata->Minute_start = doc["Data"]["StartMinute"];
+        jdata->Hour_end = doc["Data"]["EndHour"];
+        jdata->Minute_end = doc["Data"]["EndMinute"];
+        jdata->NperDay = doc["Data"]["Freq_day"];
+        jdata->WperDay = doc["Data"]["Weight_day"];
         //EEPROM.begin(9);
         EEPROM.write(1,jdata->Hour_start);
         EEPROM.write(2,jdata->Minute_start);
@@ -207,16 +209,16 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
         Calculate_timings(jdata,Feed_timings);
         }
         // 3 - Смена ID
-        else if (doc["Command"]==3){
+        else if (cmd==3){
         //EEPROM.begin(1);
-        EEPROM.write(0,doc["IDnew"]);
-        jdata->ID_f = doc["IDnew"];
+        EEPROM.write(0,doc["Data"]["IDnew"]);
+        jdata->ID_f = doc["Data"]["IDnew"];
         EEPROM.commit();
         Serial.print(" -> ID is updated = ");
         Serial.println(jdata->ID_f,DEC);
         }
         // 4 - Тарировка (нужно чтобы измерялся вес и записывался в EEPROM а также вычитался при старте из текущего веса)
-        else if (doc["Command"]==4){
+        else if (cmd==4){
           scale->set_scale();   // выполняем измерение значения без калибровочного коэффициента
           jdata->Offset = scale->read_average(10); 
           scale->set_offset(jdata->Offset);
@@ -225,38 +227,38 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
           Serial.print(" -> OFSSET is updated = ");Serial.println(jdata->Offset);
         }
         // 5 - Калибровка
-        else if (doc["Command"]==5){
+        else if (cmd==5){
           jdata->CalFactor =  Calibrate(scale,jdata);
           EEPROM_float_write(12,jdata->CalFactor);
           Serial.print(" -> CALFACTOR is updated =");Serial.println(jdata->CalFactor);
         }
         // 6 - Очистка - старт 
-        else if (doc["Command"]==6){
+        else if (cmd==6){
           bitSet(jdata->Status,STATUS_CLEAN);
           Serial.println("-> START CLEANING...");
         }
         // 7 - Очистка - отключение
-        else if (doc["Command"]==7){
+        else if (cmd==7){
           bitClear(jdata->Status,STATUS_CLEAN);
           Serial.println(" -> END CLEANING !");
-          digitalWrite(LEDPIN,LOW);
-          digitalWrite(2,LOW);
+          digitalWrite(MOTORPIN,LOW);
+          digitalWrite(LED1,LOW);
         }
         // 8 - ГЛОБАЛЬНЫЙ СТОП
-        else if (doc["Command"]==8){
+        else if (cmd==8){
           bitSet(jdata->Status,STATUS_STOP);
           Serial.print(" -> STOP !");
-          digitalWrite(LEDPIN,LOW);
-          digitalWrite(2,LOW);
+          digitalWrite(MOTORPIN,LOW);
+          digitalWrite(LED1,LOW);
         }
         // 9 - Отключение СТОПа - ГЛОБАЛЬНЫЙ СТАРТ
-        else if (doc["Command"]==9){
+        else if (cmd==9){
           bitClear(jdata->Status,STATUS_STOP);
           Serial.print(" -> START...");
         }
         // 10 - Обновление расхода по умолчанию (CONSUMPTION)
-        else if (doc["Command"]== 10){
-          jdata->Consumption = doc["DefConsump"];
+        else if (cmd== 10){
+          jdata->Consumption = doc["Data"]["DefConsump"];
           uint8_t status_from_server = doc["Status"];
           if ((bitRead(status_from_server,STATUS_ADJUSTMENT))==1)
             bitSet(jdata->Status,STATUS_ADJUSTMENT);
@@ -270,9 +272,9 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
           Serial.println(" -> NEW Consumption="+String(jdata->Consumption)+" / Adjustment_mode="+String(bitRead(jdata->Status,STATUS_ADJUSTMENT)));
         }
         //11 - SSID+PWD
-        else if (doc["Command"]== 11){
-        const char *ch_ssid = doc["SSID"];
-        const char *ch_pwd = doc["PASSWORD"];
+        else if (cmd== 11){
+        const char *ch_ssid = doc["Data"]["SSID"];
+        const char *ch_pwd = doc["Data"]["PASSWORD"];
         jdata->ssid = String(ch_ssid);
         jdata->password = String(ch_pwd);
         String wr_data = jdata->ssid+':'+jdata->password+'&';
