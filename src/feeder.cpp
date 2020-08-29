@@ -55,16 +55,13 @@ String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX7
             client.println("Content-Type: application/json");
             client.println();
             // Передача параметров обратно на сервер опроса
-            //client.println(StrokaParametrov);// для примера
             client.print("{\"ID\":");
             client.print(jdata->ID_f); 
             client.print(",\"Status\":");
             client.print(jdata->Status); 
             client.print(",\"Data\":{"); //DATA structure
-            //client.print("\"Date\":\"");
-            char bufs[18];
-            sprintf(bufs, "%02d-%02d-%04d %02d:%02d",prtc.day(),prtc.month(),prtc.year(),prtc.hour(),prtc.minute());
-            client.print("\"Time\":\"");client.print(bufs);
+            client.print("\"Time\":\"");client.print(prtc.timestamp());
+            char bufs[5];
             sprintf(bufs, "%02d:%02d",jdata->Hour_start,jdata->Minute_start);
             client.print("\",\"EjectStart\":\"");client.print(bufs);
             sprintf(bufs, "%02d:%02d",jdata->Hour_end,jdata->Minute_end);
@@ -162,6 +159,9 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
 {
   int cmd;
   int ID;
+  const char* str_temp;
+  String strt;
+  String sval;
   if (*s!=""){
     Serial.print("JSON request = ");
     Serial.println(*s); 
@@ -175,30 +175,31 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
     if (jdata->ID_f == ID){
         // 1 - Обновление времени (TIME UPDATE)
         if (cmd == 1){
-          rtc->adjust(DateTime(doc["Data"]["Year"], doc["Data"]["Month"], doc["Data"]["Day"], doc["Data"]["Hour"], doc["Data"]["Minute"], 0));
+          str_temp  = doc["Data"]["Time"];
+          rtc->adjust(DateTime(str_temp));
           Serial.println(" -> Time is updated");
         }
         // 2 - Обновление режима кормления (FEEDING SETTINGS)
         else if (cmd == 2){
-        jdata->Hour_start = doc["Data"]["StartHour"];
-        Serial.println(jdata->Hour_start);
-        jdata->Minute_start = doc["Data"]["StartMinute"];
-        jdata->Hour_end = doc["Data"]["EndHour"];
-        jdata->Minute_end = doc["Data"]["EndMinute"];
-        jdata->NperDay = doc["Data"]["EjectFreq "];
-        jdata->WperDay = doc["Data"]["EjectWeight"];
+        str_temp  = doc["Data"]["EjectStart"];
+        Serial.println(str_temp);
+        //jdata->Minute_start = doc["Data"]["StartMinute"];
+        //jdata->Hour_end = doc["Data"]["EndHour"];
+        //jdata->Minute_end = doc["Data"]["EndMinute"];
+        //jdata->NperDay = doc["Data"]["EjectFreq "];
+        //jdata->WperDay = doc["Data"]["EjectWeight"];
         //EEPROM.begin(9);
-        EEPROM.write(1,jdata->Hour_start);
-        EEPROM.write(2,jdata->Minute_start);
-        EEPROM.write(3,jdata->Hour_end);
-        EEPROM.write(4,jdata->Minute_end);
-        EEPROM.write(5,highByte(jdata->NperDay));
-        EEPROM.write(6,lowByte(jdata->NperDay));
-        EEPROM.write(7,highByte(jdata->WperDay));
-        EEPROM.write(8,lowByte(jdata->WperDay));
-        EEPROM.commit();
+        //EEPROM.write(1,jdata->Hour_start);
+        //EEPROM.write(2,jdata->Minute_start);
+        //EEPROM.write(3,jdata->Hour_end);
+        //EEPROM.write(4,jdata->Minute_end);
+        //EEPROM.write(5,highByte(jdata->NperDay));
+        //EEPROM.write(6,lowByte(jdata->NperDay));
+        //EEPROM.write(7,highByte(jdata->WperDay));
+        //EEPROM.write(8,lowByte(jdata->WperDay));
+        //EEPROM.commit();
         Serial.println(" -> Mode is updated:");
-        Calculate_timings(jdata,Feed_timings);
+        //Calculate_timings(jdata,Feed_timings);
         }
         // 3 - Смена ID
         else if (cmd==3){
