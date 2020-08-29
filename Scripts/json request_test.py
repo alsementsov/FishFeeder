@@ -5,7 +5,7 @@ url = 'http://192.168.0.111'
 
 ID=1
 #Choose command
-SW=2
+SW=0
 
 if SW==0:
     payload = {'ID': ID,'Command':0}
@@ -40,8 +40,8 @@ resp = requests.post(url, data=json.dumps(payload), headers=headers)
 print('HTTP Status: ',resp.status_code)
 print(resp.text)
 answer = resp.json() 
-w=int(answer['Weight'])/1000
+w=int(answer['Data']['Weight'])/1000
 print('Weight: '+str(round(w)))
-print('Start = ',answer['StartHour'],':',answer['StartMinute'])
-print('End   = ',answer['EndHour'],':',answer['EndMinute'])
-print('Частота = ',answer['Freq_day'],' / Вес за день = ',answer['Weight_day'])
+#print('Start = ',answer['StartHour'],':',answer['StartMinute'])
+#print('End   = ',answer['EndHour'],':',answer['EndMinute'])
+#print('Частота = ',answer['Freq_day'],' / Вес за день = ',answer['Weight_day'])

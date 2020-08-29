@@ -23,6 +23,7 @@ bool SmartDelay (const unsigned long Tdelay)
   }
   return flag;
 }
+
 String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX711 *scale){
   String StrokaParametrov = "";
   WiFiClient client = server->available(); 
@@ -57,35 +58,31 @@ String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX7
             //client.println(StrokaParametrov);// для примера
             client.print("{\"ID\":");
             client.print(jdata->ID_f); 
-            client.print(",\"Year\":");
-            client.print(prtc.year()); 
-            client.print(",\"Month\":");
-            client.print(prtc.month()); 
-            client.print(",\"Day\":");
-            client.print(prtc.day()); 
-            client.print(",\"Hour\":");
-            client.print(prtc.hour()); 
-            client.print(",\"Minute\":");
-            client.print(prtc.minute()); 
-            client.print(",\"StartHour\":");
-            client.print(jdata->Hour_start); 
-            client.print(",\"StartMinute\":");
-            client.print(jdata->Minute_start);
-            client.print(",\"EndHour\":"); 
-            client.print(jdata->Hour_end); 
-            client.print(",\"EndMinute\":");
-            client.print(jdata->Minute_end); 
-            client.print(",\"Freq_day\":");
+            client.print(",\"Status\":");
+            client.print(jdata->Status); 
+            client.print(",\"Data\":{"); //DATA structure
+            client.print("\"Date\":");
+            if (prtc.day()<10) client.print("0"); client.print(prtc.day()); client.print(":");
+            if (prtc.month()<10) client.print("0");client.print(prtc.month()); client.print(":");
+            client.print(prtc.year());
+            client.print(",\"Time\":");
+            if (prtc.hour()<10) client.print("0"); client.print(prtc.hour()); client.print(":");
+            if (prtc.minute()<10) client.print("0");client.print(prtc.minute()); client.print(":");
+            client.print(",\"EjectStart\":");
+            if (jdata->Hour_start<10) client.print("0"); client.print(jdata->Hour_start); client.print(":");
+            if (jdata->Minute_start<10) client.print("0");client.print(jdata->Minute_start); client.print(":");
+            client.print(",\"EjectEnd\":");
+            if (jdata->Hour_end<10) client.print("0"); client.print(jdata->Hour_end); client.print(":");
+            if (jdata->Minute_end<10) client.print("0");client.print(jdata->Minute_end); client.print(":");
+            client.print(",\"EjectFreq \":");
             client.print(jdata->NperDay); 
-            client.print(",\"Weight_day\":");
+            client.print(",\"EjectWeight\":");
             client.print(jdata->WperDay); 
             client.print(",\"Weight\":");        
             client.print(Weight_cur);//jdata->Weight); 
             client.print(",\"DefConsump\":");
             client.print(jdata->Consumption);
-            client.print(",\"Status\":");
-            client.print(jdata->Status); 
-            client.print("}"); 
+            client.print("}}"); 
             client.println(); 
             break;
        }
@@ -193,8 +190,8 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
         jdata->Minute_start = doc["Data"]["StartMinute"];
         jdata->Hour_end = doc["Data"]["EndHour"];
         jdata->Minute_end = doc["Data"]["EndMinute"];
-        jdata->NperDay = doc["Data"]["Freq_day"];
-        jdata->WperDay = doc["Data"]["Weight_day"];
+        jdata->NperDay = doc["Data"]["EjectFreq "];
+        jdata->WperDay = doc["Data"]["EjectWeight"];
         //EEPROM.begin(9);
         EEPROM.write(1,jdata->Hour_start);
         EEPROM.write(2,jdata->Minute_start);
