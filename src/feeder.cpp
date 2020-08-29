@@ -177,29 +177,36 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
         if (cmd == 1){
           str_temp  = doc["Data"]["Time"];
           rtc->adjust(DateTime(str_temp));
-          Serial.println(" -> Time is updated");
+          Serial.println(" -> Time has been updated");
         }
         // 2 - Обновление режима кормления (FEEDING SETTINGS)
         else if (cmd == 2){
         str_temp  = doc["Data"]["EjectStart"];
-        Serial.println(str_temp);
-        //jdata->Minute_start = doc["Data"]["StartMinute"];
-        //jdata->Hour_end = doc["Data"]["EndHour"];
-        //jdata->Minute_end = doc["Data"]["EndMinute"];
-        //jdata->NperDay = doc["Data"]["EjectFreq "];
-        //jdata->WperDay = doc["Data"]["EjectWeight"];
+        strt=str_temp;
+        sval = strt.substring(0,2);
+        jdata->Hour_start = sval.toInt();
+        sval = strt.substring(3);
+        jdata->Minute_start = sval.toInt();
+        str_temp  = doc["Data"]["EjectEnd"];
+        strt=str_temp;
+        sval = strt.substring(0,2);
+        jdata->Hour_end = sval.toInt();
+        sval = strt.substring(3);
+        jdata->Minute_end = sval.toInt();
+        jdata->NperDay = doc["Data"]["EjectFreq"];
+        jdata->WperDay = doc["Data"]["EjectWeight"];
         //EEPROM.begin(9);
-        //EEPROM.write(1,jdata->Hour_start);
-        //EEPROM.write(2,jdata->Minute_start);
-        //EEPROM.write(3,jdata->Hour_end);
-        //EEPROM.write(4,jdata->Minute_end);
-        //EEPROM.write(5,highByte(jdata->NperDay));
-        //EEPROM.write(6,lowByte(jdata->NperDay));
-        //EEPROM.write(7,highByte(jdata->WperDay));
-        //EEPROM.write(8,lowByte(jdata->WperDay));
-        //EEPROM.commit();
-        Serial.println(" -> Mode is updated:");
-        //Calculate_timings(jdata,Feed_timings);
+        EEPROM.write(1,jdata->Hour_start);
+        EEPROM.write(2,jdata->Minute_start);
+        EEPROM.write(3,jdata->Hour_end);
+        EEPROM.write(4,jdata->Minute_end);
+        EEPROM.write(5,highByte(jdata->NperDay));
+        EEPROM.write(6,lowByte(jdata->NperDay));
+        EEPROM.write(7,highByte(jdata->WperDay));
+        EEPROM.write(8,lowByte(jdata->WperDay));
+        EEPROM.commit();
+        Serial.println(" -> Mode has been updated:");
+        Calculate_timings(jdata,Feed_timings);
         }
         // 3 - Смена ID
         else if (cmd==3){
@@ -207,7 +214,7 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
         EEPROM.write(0,doc["Data"]["IDnew"]);
         jdata->ID_f = doc["Data"]["IDnew"];
         EEPROM.commit();
-        Serial.print(" -> ID is updated = ");
+        Serial.print(" -> ID has been updated = ");
         Serial.println(jdata->ID_f,DEC);
         }
         // 4 - Тарировка (нужно чтобы измерялся вес и записывался в EEPROM а также вычитался при старте из текущего веса)
@@ -217,13 +224,13 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
           scale->set_offset(jdata->Offset);
           EEPROM_long_write(16,jdata->Offset);
           scale->set_scale(jdata->CalFactor);
-          Serial.print(" -> OFSSET is updated = ");Serial.println(jdata->Offset);
+          Serial.print(" -> OFSSET has been updated = ");Serial.println(jdata->Offset);
         }
         // 5 - Калибровка
         else if (cmd==5){
           jdata->CalFactor =  Calibrate(scale,jdata);
           EEPROM_float_write(12,jdata->CalFactor);
-          Serial.print(" -> CALFACTOR is updated =");Serial.println(jdata->CalFactor);
+          Serial.print(" -> CALFACTOR has been updated =");Serial.println(jdata->CalFactor);
         }
         // 6 - Очистка - старт 
         else if (cmd==6){
@@ -267,7 +274,7 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
         //11 - SSID+PWD
         else if (cmd== 11){
         const char *ch_ssid = doc["Data"]["SSID"];
-        const char *ch_pwd = doc["Data"]["PASSWORD"];
+        const char *ch_pwd = doc["Data"]["Password"];
         jdata->ssid = String(ch_ssid);
         jdata->password = String(ch_pwd);
         String wr_data = jdata->ssid+':'+jdata->password+'&';
