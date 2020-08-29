@@ -171,7 +171,7 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
     cmd = doc["Command"];
     ID = doc["ID"];
     Serial.print("ID=");Serial.print(ID); Serial.print(" / CMD=");Serial.println(cmd); 
-      // Обработка запроса к этому устройству
+      // Обработка запроса к устройству
     if (jdata->ID_f == ID){
         // 1 - Обновление времени (TIME UPDATE)
         if (cmd == 1){
