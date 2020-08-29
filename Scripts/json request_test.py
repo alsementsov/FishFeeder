@@ -10,9 +10,9 @@ SW=0
 if SW==0:
     payload = {'ID': ID,'Command':0}
 elif SW==1:
-    payload = {'ID': ID,'Command':1,'Data':{'Year':2020, 'Month':8, 'Day':7, 'Hour':14, 'Minute':10}}
+    payload = {'ID': ID,'Command':1,'Data':{'Time':'29-08-2020 12:12'}}
 elif SW==2:
-    payload = {'ID': ID,'Command':2,'Data':{'StartHour':9,'StartMinute':0,'EndHour':10,'EndMinute':0,'Freq_day':120,'Weight_day':720}}
+    payload = {'ID': ID,'Command':2,'Data':{'EjectStart':'09:00','EjectEnd':'19:00','EjectFreq':200,'EjectWieght':800}}
 elif SW==3:
     payload = {'ID': ID,'Command':3,'Data':{'IDnew':1}}
 elif SW==4:
@@ -42,6 +42,6 @@ print(resp.text)
 answer = resp.json() 
 w=int(answer['Data']['Weight'])/1000
 print('Weight: '+str(round(w)))
-#print('Start = ',answer['StartHour'],':',answer['StartMinute'])
+print('Start = ',answer['Data']['EjectStart'])
 #print('End   = ',answer['EndHour'],':',answer['EndMinute'])
 #print('Частота = ',answer['Freq_day'],' / Вес за день = ',answer['Weight_day'])
