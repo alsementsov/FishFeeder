@@ -62,18 +62,18 @@ String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX7
             client.print(jdata->Status); 
             client.print(",\"Data\":{"); //DATA structure
             client.print("\"Date\":");
-            if (prtc.day()<10) client.print("0"); client.print(prtc.day()); client.print(":");
-            if (prtc.month()<10) client.print("0");client.print(prtc.month()); client.print(":");
+            if (prtc.day()<10) client.print("0"); client.print(prtc.day()); client.print("-");
+            if (prtc.month()<10) client.print("0");client.print(prtc.month()); client.print("-");
             client.print(prtc.year());
             client.print(",\"Time\":");
             if (prtc.hour()<10) client.print("0"); client.print(prtc.hour()); client.print(":");
-            if (prtc.minute()<10) client.print("0");client.print(prtc.minute()); client.print(":");
+            if (prtc.minute()<10) client.print("0");client.print(prtc.minute());
             client.print(",\"EjectStart\":");
             if (jdata->Hour_start<10) client.print("0"); client.print(jdata->Hour_start); client.print(":");
-            if (jdata->Minute_start<10) client.print("0");client.print(jdata->Minute_start); client.print(":");
+            if (jdata->Minute_start<10) client.print("0");client.print(jdata->Minute_start); 
             client.print(",\"EjectEnd\":");
             if (jdata->Hour_end<10) client.print("0"); client.print(jdata->Hour_end); client.print(":");
-            if (jdata->Minute_end<10) client.print("0");client.print(jdata->Minute_end); client.print(":");
+            if (jdata->Minute_end<10) client.print("0");client.print(jdata->Minute_end);
             client.print(",\"EjectFreq \":");
             client.print(jdata->NperDay); 
             client.print(",\"EjectWeight\":");
