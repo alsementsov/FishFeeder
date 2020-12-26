@@ -1,4 +1,4 @@
-#define Version 20 //Version
+#define Version 21 //Version
 #include <Arduino.h>
 #include <HX711.h>
 #include <WiFi.h>
