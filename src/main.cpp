@@ -31,30 +31,33 @@ void setup() {
   //Обнуление статуса ошибок при старта
   Serial.begin(115200);
   pinMode(MOTORPIN, OUTPUT); 
-  pinMode(LED1, OUTPUT);
-  pinMode(LED2, OUTPUT);
-  pinMode(LED3, OUTPUT);
-  pinMode(LEDEXT, OUTPUT);
-  digitalWrite(LED1,LOW);
-  digitalWrite(LED2,LOW);
-  digitalWrite(LED3,HIGH);
-  digitalWrite(LEDEXT,LOW);
+  pinMode(LED1, OUTPUT);  pinMode(LED2, OUTPUT);
+  pinMode(LED3, OUTPUT);  pinMode(LEDEXT, OUTPUT);
+  digitalWrite(LED1,LOW);  digitalWrite(LED2,LOW);
+  digitalWrite(LED3,HIGH);  digitalWrite(LEDEXT,LOW);
    
-  //EEPROM.begin(64);     // set the LED pin mode
+  EEPROM.begin(64);     // set the LED pin mode
   delay(10);
   //Version
   Serial.print("Version: ");Serial.println(Version);
-  // RTC starting
   //////// READ PARAMETERS from EEPROM ////////
-  //jdata = ReadParameters();
-  //RTC_init(&jdata,&rtc); // было выше чтения параметров
-  //Serial.print("ID: ");Serial.println(jdata.ID_f);
-  // WIFi start...as AP
-  IPAddress apIP(192, 168, 1, 1);
-  WiFi.mode(WIFI_AP);
-  WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-  WiFi.softAP(OWN_SSID, OWN_PWD);
-  Serial.print("WIFI_AP: ");Serial.println(WiFi.softAPIP());
+  jdata = ReadParameters();
+  // RTC starting
+  RTC_init(&jdata,&rtc); // было выше чтения параметров
+  Serial.print("ID: ");Serial.println(jdata.ID_f);
+  // WIFi starting
+  if (jdata.Mode ==0){
+    //AP start
+      IPAddress apIP(192, 168, 1, 1);
+      WiFi.mode(WIFI_AP);
+      WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+      WiFi.softAP(OWN_SSID, OWN_PWD);
+      Serial.print("WIFI_AP: ");Serial.println(WiFi.softAPIP());
+  }
+  else {
+    //Station start
+
+  }
   // Расчет таймингов кормления
   //Calculate_timings(&jdata,&Feed_timings);
   // Настройка ТЕНЗОДАТЧИКА

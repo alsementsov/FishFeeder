@@ -54,7 +54,7 @@ struct Parameters
     uint8_t Status=0;
     String ssid;
     String password;
-    bool Mode; // 0-AP, 1-Station 
+    uint8_t Mode; // 0-AP, 1-Station 
 };
 struct timings
 {

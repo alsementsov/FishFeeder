@@ -288,7 +288,6 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
 // Чтение параметров из памяти
 struct Parameters ReadParameters()
 { 
-  //EEPROM.begin(50);
   struct Parameters jdata;
   jdata.ID_f = EEPROM.read(0);
   jdata.Hour_start = EEPROM.read(1);
@@ -311,23 +310,26 @@ struct Parameters ReadParameters()
   jdata.CalFactor = EEPROM_float_read(12); //12,13,14,15 for float
   if (jdata.CalFactor == 0){jdata.CalFactor=1;} 
   jdata.Offset = EEPROM_long_read(16);//16,17,18,19 for long
-  // SSID + PWD
-  String recivedData;
-  recivedData = EEPROM_String_read(20);
-  int num = recivedData.indexOf(':');
-  if (num==-1){
-    jdata.Mode = 0;
+  jdata.Mode = EEPROM.read(20);// Read AP/Station connection mode
+  if (jdata.Mode > 1){jdata.Mode = 0;} //AP for default state
+  // AP + SSID/PWD
+  // Если нет записанной сети - AP mode=0
+  if (jdata.Mode == 0){
     jdata.password = OWN_PWD;
     jdata.ssid = OWN_SSID;
-    Serial.println("No saving SSID! Loading default AP:"+jdata.ssid+"/"+jdata.password);
+    Serial.println("No saving SSID for external AP! Loading Default AP:"+jdata.ssid+"/"+jdata.password);
   }
+  // Station mode
   else{
+    String recivedData;
+    recivedData = EEPROM_String_read(21);//
+    int num = recivedData.indexOf(':');
     String S_login = recivedData.substring(0,num);
     String pwd = recivedData.substring(num+1,recivedData.length()-1);
     jdata.ssid = S_login;
-    Serial.print("SSID="); Serial.print(jdata.ssid);
+    Serial.print("Ext.AP: SSID="); Serial.print(jdata.ssid);
     jdata.password = pwd;
-    Serial.print("/password="); Serial.println(jdata.password);
+    Serial.print(" / Password="); Serial.println(jdata.password);
   }
   return jdata; 
 }
