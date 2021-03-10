@@ -19,7 +19,7 @@ unsigned long delta =0;
 long Weight_before;
 uint16_t NoChanging_cnt=0;
 bool firstloop;
-bool Start_with_AP=0;
+bool Connect_ExtAP=0;
 bool feed = 0;
 bool flag_calc = 0;
 long Consumption_temp;
@@ -56,30 +56,32 @@ void setup() {
   }
   else {
     //Station start
-
+    unsigned long t = millis();
+    while ((millis()-t)<10000)
+    {    Connect_ExtAP = WiFi_connect(&jdata, &server);  }
+    if (WiFi.getAutoConnect() != true) WiFi.setAutoConnect(true);  //on power-on automatically connects to last used hwAP
+    WiFi.setAutoReconnect(true);
+    firstloop = 1;
   }
   // Расчет таймингов кормления
-  //Calculate_timings(&jdata,&Feed_timings);
+  Calculate_timings(&jdata,&Feed_timings);
   // Настройка ТЕНЗОДАТЧИКА
-  //scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-  //delay(1000); 
-  //if (scale.is_ready()) {     // сбрасываем значения веса на датчике в 0   
-    //scale.set_offset(jdata.Offset);
-    //scale.set_scale(jdata.CalFactor);  
-    //Serial.print("Scale parameters init:");Serial.print(jdata.Offset);Serial.print("/");Serial.println(jdata.CalFactor);  
-  //}
-  //else  {  
-    //bitSet(jdata.Status,STATUS_ERROR_SCALE);// Запись ошибки ВЕСОВ
-    //Serial.println("-- Scale connection ERROR ! --");
-  //}
-  //firstloop = 1;
-  //if (WiFi.getAutoConnect() != true) WiFi.setAutoConnect(true);  //on power-on automatically connects to last used hwAP
-  //WiFi.setAutoReconnect(true);
-  //Consumption_temp = jdata.Consumption;
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+  delay(1000); 
+  if (scale.is_ready()) {     // сбрасываем значения веса на датчике в 0   
+    scale.set_offset(jdata.Offset);
+    scale.set_scale(jdata.CalFactor);  
+    Serial.print("Scale parameters init:");Serial.print(jdata.Offset);Serial.print("/");Serial.println(jdata.CalFactor);  
+  }
+  else  {  
+    bitSet(jdata.Status,STATUS_ERROR_SCALE);// Запись ошибки ВЕСОВ
+    Serial.println("-- Scale connection ERROR ! --");
+  }
+  Consumption_temp = jdata.Consumption;
 }
 //////////////////////////////// LOOP ////////////////////////////////////////////////////////
 void loop() {
-  /* 
+
   // ******** FEEDING **********
   // if there are no Clean or global STOP
   if ((bitRead(jdata.Status,STATUS_CLEAN)==0)&&(bitRead(jdata.Status,STATUS_STOP)==0)) 
@@ -244,19 +246,23 @@ void loop() {
     }
   }
   ///////////////////// WIFI ///////////////////////////
-  if (firstloop ==1)  {firstloop = 0;}
-  else if (Start_with_AP==0)
-    Start_with_AP =  WiFi_connect(&jdata, &server);
-  else if (WiFi.status() != WL_CONNECTED)
-  {
-    WiFi.reconnect(); 
-    Serial.println("AP is lost. Trying to AP reconnect...");
+  if (jdata.Mode==1){
+    if (firstloop ==1)  {firstloop = 0;}
+    else if (Start_with_AP==0)
+      Start_with_AP =  WiFi_connect(&jdata, &server);
+    else if (WiFi.status() != WL_CONNECTED)
+    {
+      WiFi.reconnect(); 
+      Serial.println("AP is lost. Trying to AP reconnect...");
+    }
+    else
+    {
+      String s;
+      s = Client_connect(&rtc,&jdata,&server,&scale);
+      ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
+    }
   }
-  else
-  {
-    String s;
-    s = Client_connect(&rtc,&jdata,&server,&scale);
-    ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
+  else{
+    
   }
-*/
 }
