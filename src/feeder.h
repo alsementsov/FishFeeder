@@ -33,7 +33,11 @@ using namespace std;
 #define STATUS_ERROR_SCALE      4  //Проверяется в setup
 #define STATUS_ERROR_RTC        5  //Проверяется в setup
 #define STATUS_ERROR_Imotor     6  // Нет пока !!! - нужно тестить плату измерителя тока
-#define STATUS_RESERVED   7      // Резерв
+#define STATUS_RESERV   7      // В статусе AP = 1 (по умолчанию), если коннектится как Станция = 0
+
+// AP config itself
+#define OWN_SSID "FishFeeder"
+#define OWN_PWD "14091982" 
 
 struct Parameters
 {   int ID_f;
@@ -50,6 +54,7 @@ struct Parameters
     uint8_t Status=0;
     String ssid;
     String password;
+    bool Mode; // 0-AP, 1-Station 
 };
 struct timings
 {

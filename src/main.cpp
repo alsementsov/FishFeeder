@@ -1,4 +1,4 @@
-#define Version 21 //Version
+#define Version 22 //Version AP
 #include <Arduino.h>
 #include <HX711.h>
 #include <WiFi.h>
@@ -40,42 +40,43 @@ void setup() {
   digitalWrite(LED3,HIGH);
   digitalWrite(LEDEXT,LOW);
    
-  EEPROM.begin(64);     // set the LED pin mode
+  //EEPROM.begin(64);     // set the LED pin mode
   delay(10);
   //Version
   Serial.print("Version: ");Serial.println(Version);
   // RTC starting
-  RTC_init(&jdata,&rtc);
   //////// READ PARAMETERS from EEPROM ////////
-  jdata = ReadParameters();
-  Serial.print("ID: ");Serial.println(jdata.ID_f);
-  // WIFi start...
-  unsigned long t = millis();
-  while ((Start_with_AP==0)&&(millis()-t<10000))
-  {
-    Start_with_AP = WiFi_connect(&jdata, &server);
-  }
+  //jdata = ReadParameters();
+  //RTC_init(&jdata,&rtc); // было выше чтения параметров
+  //Serial.print("ID: ");Serial.println(jdata.ID_f);
+  // WIFi start...as AP
+  IPAddress apIP(192, 168, 1, 1);
+  WiFi.mode(WIFI_AP);
+  WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+  WiFi.softAP(OWN_SSID, OWN_PWD);
+  Serial.print("WIFI_AP: ");Serial.println(WiFi.softAPIP());
   // Расчет таймингов кормления
-  Calculate_timings(&jdata,&Feed_timings);
+  //Calculate_timings(&jdata,&Feed_timings);
   // Настройка ТЕНЗОДАТЧИКА
-  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-  delay(1000); 
-  if (scale.is_ready()) {     // сбрасываем значения веса на датчике в 0   
-    scale.set_offset(jdata.Offset);
-    scale.set_scale(jdata.CalFactor);  
-    Serial.print("Scale parameters init:");Serial.print(jdata.Offset);Serial.print("/");Serial.println(jdata.CalFactor);  
-  }
-  else  {  
-    bitSet(jdata.Status,STATUS_ERROR_SCALE);// Запись ошибки ВЕСОВ
-    Serial.println("-- Scale connection ERROR ! --");
-  }
-  firstloop = 1;
-  if (WiFi.getAutoConnect() != true) WiFi.setAutoConnect(true);  //on power-on automatically connects to last used hwAP
-  WiFi.setAutoReconnect(true);
-  Consumption_temp = jdata.Consumption;
+  //scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+  //delay(1000); 
+  //if (scale.is_ready()) {     // сбрасываем значения веса на датчике в 0   
+    //scale.set_offset(jdata.Offset);
+    //scale.set_scale(jdata.CalFactor);  
+    //Serial.print("Scale parameters init:");Serial.print(jdata.Offset);Serial.print("/");Serial.println(jdata.CalFactor);  
+  //}
+  //else  {  
+    //bitSet(jdata.Status,STATUS_ERROR_SCALE);// Запись ошибки ВЕСОВ
+    //Serial.println("-- Scale connection ERROR ! --");
+  //}
+  //firstloop = 1;
+  //if (WiFi.getAutoConnect() != true) WiFi.setAutoConnect(true);  //on power-on automatically connects to last used hwAP
+  //WiFi.setAutoReconnect(true);
+  //Consumption_temp = jdata.Consumption;
 }
 //////////////////////////////// LOOP ////////////////////////////////////////////////////////
-void loop() { 
+void loop() {
+  /* 
   // ******** FEEDING **********
   // if there are no Clean or global STOP
   if ((bitRead(jdata.Status,STATUS_CLEAN)==0)&&(bitRead(jdata.Status,STATUS_STOP)==0)) 
@@ -254,4 +255,5 @@ void loop() {
     s = Client_connect(&rtc,&jdata,&server,&scale);
     ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
   }
+*/
 }

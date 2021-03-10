@@ -285,6 +285,7 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
     }
   }
 }
+// Чтение параметров из памяти
 struct Parameters ReadParameters()
 { 
   //EEPROM.begin(50);
@@ -315,9 +316,10 @@ struct Parameters ReadParameters()
   recivedData = EEPROM_String_read(20);
   int num = recivedData.indexOf(':');
   if (num==-1){
-    jdata.password = PWD_DEFAULT;
-    jdata.ssid = SSID_DEFAULT;
-    Serial.println("No saving SSID! Loading default connection:"+jdata.ssid+"/"+jdata.password);
+    jdata.Mode = 0;
+    jdata.password = OWN_PWD;
+    jdata.ssid = OWN_SSID;
+    Serial.println("No saving SSID! Loading default AP:"+jdata.ssid+"/"+jdata.password);
   }
   else{
     String S_login = recivedData.substring(0,num);
@@ -379,9 +381,9 @@ bool WiFi_connect(Parameters *jdata, WiFiServer *server)
 }
 void RTC_init(Parameters *jdata,RTC_DS3231 *rtc)
 {
-    if (! rtc->begin()) {
-    Serial.println("ERROR: Couldn't find RTC...");
-    bitSet(jdata->Status,STATUS_ERROR_RTC); //Запись ошибки ЧАСОВ;
+  if (! rtc->begin()) {
+      Serial.println("ERROR: Couldn't find RTC...");
+      bitSet(jdata->Status,STATUS_ERROR_RTC); //Запись ошибки ЧАСОВ;
   }
   DateTime prtc = rtc->now();
   Serial.print("RTC: ");Serial.print(prtc.year(), DEC);
