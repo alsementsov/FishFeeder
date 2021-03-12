@@ -277,10 +277,12 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
         const char *ch_pwd = doc["Data"]["Password"];
         jdata->ssid = String(ch_ssid);
         jdata->password = String(ch_pwd);
+        jdata->Mode = doc["data"]["Mode"];
         String wr_data = jdata->ssid+':'+jdata->password+'&';
-        EEPROM_String_write(20,wr_data);
+        EEPROM.write(20,doc["Data"]["Mode"]);
+        EEPROM_String_write(21,wr_data);
         EEPROM.commit();
-        Serial.println("-> Write auth.data = "+wr_data);
+        Serial.print("Write auth.data = "+wr_data+"Mode = ");Serial.println(jdata->Mode);
         }
     }
   }

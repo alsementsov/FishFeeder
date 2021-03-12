@@ -53,6 +53,7 @@ void setup() {
       WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
       WiFi.softAP(OWN_SSID, OWN_PWD);
       Serial.print("WIFI_AP: ");Serial.println(WiFi.softAPIP());
+      server.begin();
   }
   else {
     //Station start
@@ -247,9 +248,8 @@ void loop() {
   }
   ///////////////////// WIFI ///////////////////////////
   if (jdata.Mode==1){
-    if (firstloop ==1)  {firstloop = 0;}
-    else if (Start_with_AP==0)
-      Start_with_AP =  WiFi_connect(&jdata, &server);
+    if ((Connect_ExtAP==0)&&(firstloop==0))
+      Connect_ExtAP =  WiFi_connect(&jdata, &server);
     else if (WiFi.status() != WL_CONNECTED)
     {
       WiFi.reconnect(); 
@@ -261,8 +261,16 @@ void loop() {
       s = Client_connect(&rtc,&jdata,&server,&scale);
       ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
     }
-  }
+  }  
   else{
-    
+      uint8_t flag_mode = jdata.Mode;
+      String s;
+      s = Client_connect(&rtc,&jdata,&server,&scale);
+      ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
+      if ((flag_mode==0)&&(jdata.Mode==1)){
+        WiFi.begin("ABS","13121985"); //вставить jdata
+        Serial.println("Start as STA.....");
+      }
   }
+  if (firstloop ==1)  {firstloop = 0;}
 }

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import requests
 import json
-url = 'http://192.168.0.111'
+url = 'http://192.168.1.1'
 
 ID=1
 #Choose command
-SW=0
+SW=11
 
 if SW==0:
     payload = {'ID': ID,'Command':0}
@@ -30,7 +30,7 @@ elif SW==9:
 elif SW==10:
     payload = {'ID': ID,'Command':10,'Data':{'DefConsump':1000,'Status':1}} # Расход по умолчанию и режим автокоррекции
 elif SW==11:
-    payload = {'ID': ID,'Command':11,'Data':{'SSID':'ABS','Password':'13121985'}} # AP
+    payload = {'ID': ID,'Command':11,'Data':{'SSID':'ABS','Password':'13121985','Mode':'1'}} # AP
 
 headers = {'content-type': 'application/json'}
 
