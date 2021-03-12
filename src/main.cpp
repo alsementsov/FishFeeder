@@ -1,4 +1,4 @@
-#define Version 22 //Version AP
+#define Version 24 //Version AP
 #include <Arduino.h>
 #include <HX711.h>
 #include <WiFi.h>
@@ -48,7 +48,7 @@ void setup() {
   // WIFi starting
   if (jdata.Mode ==0){
     //AP start
-      IPAddress apIP(192, 168, 1, 1);
+      IPAddress apIP(192, 168, 0, 1);
       WiFi.mode(WIFI_AP);
       WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
       WiFi.softAP(OWN_SSID, OWN_PWD);
@@ -58,8 +58,10 @@ void setup() {
   else {
     //Station start
     unsigned long t = millis();
-    while ((millis()-t)<10000)
-    {    Connect_ExtAP = WiFi_connect(&jdata, &server);  }
+    while ((Connect_ExtAP==0)&&((millis()-t)<10000))    
+    {
+      Connect_ExtAP = WiFi_connect(&jdata, &server);  
+    }
     if (WiFi.getAutoConnect() != true) WiFi.setAutoConnect(true);  //on power-on automatically connects to last used hwAP
     WiFi.setAutoReconnect(true);
     firstloop = 1;
@@ -246,10 +248,15 @@ void loop() {
       Tstart_clean=0;
     }
   }
+
+  //////////////////////////////////////////////////////
   ///////////////////// WIFI ///////////////////////////
-  if (jdata.Mode==1){
-    if ((Connect_ExtAP==0)&&(firstloop==0))
+  //////////////////////////////////////////////////////
+  if (jdata.Mode==1)
+  {
+    if ((Connect_ExtAP==0)&&(firstloop==0)){
       Connect_ExtAP =  WiFi_connect(&jdata, &server);
+    }
     else if (WiFi.status() != WL_CONNECTED)
     {
       WiFi.reconnect(); 
@@ -260,16 +267,28 @@ void loop() {
       String s;
       s = Client_connect(&rtc,&jdata,&server,&scale);
       ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
+      if (jdata.Mode==0)
+      {
+        IPAddress apIP(192, 168, 0, 1);
+        WiFi.mode(WIFI_AP);
+        WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+        WiFi.softAP(OWN_SSID, OWN_PWD);
+        Serial.print("Start as AP: ");Serial.println(WiFi.softAPIP());
+        server.begin();
+      }
     }
   }  
-  else{
-      uint8_t flag_mode = jdata.Mode;
+  else
+  {
       String s;
       s = Client_connect(&rtc,&jdata,&server,&scale);
       ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
-      if ((flag_mode==0)&&(jdata.Mode==1)){
-        WiFi.begin("ABS","13121985"); //вставить jdata
-        Serial.println("Start as STA.....");
+      if (jdata.Mode==1)
+      {
+        String temp_ssid = jdata.ssid;
+        String temp_pwd = jdata.password;
+        WiFi.begin(&temp_ssid[0],&temp_pwd[0]); //новые параметры из jdata
+        Serial.print("Start as STA = ");Serial.println(temp_ssid+"/"+temp_pwd);
       }
   }
   if (firstloop ==1)  {firstloop = 0;}

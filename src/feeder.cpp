@@ -155,6 +155,7 @@ void Calculate_timings(Parameters *jdata, timings *Feed_timings){
   Serial.print("WperSample_cur(mg) = ");Serial.println(Feed_timings->WperSample_cur);
   Serial.print("Consumption(mg/sec) = ");Serial.println(jdata->Consumption);
 }
+// Парсинг запроса
 void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings,HX711 *scale)
 {
   int cmd;
@@ -277,12 +278,12 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
         const char *ch_pwd = doc["Data"]["Password"];
         jdata->ssid = String(ch_ssid);
         jdata->password = String(ch_pwd);
-        jdata->Mode = doc["data"]["Mode"];
+        jdata->Mode = doc["Data"]["Mode"];
         String wr_data = jdata->ssid+':'+jdata->password+'&';
         EEPROM.write(20,doc["Data"]["Mode"]);
         EEPROM_String_write(21,wr_data);
         EEPROM.commit();
-        Serial.print("Write auth.data = "+wr_data+"Mode = ");Serial.println(jdata->Mode);
+        Serial.print("Write auth.data = "+wr_data+" / Mode = "); Serial.println(jdata->Mode);
         }
     }
   }
@@ -319,7 +320,7 @@ struct Parameters ReadParameters()
   if (jdata.Mode == 0){
     jdata.password = OWN_PWD;
     jdata.ssid = OWN_SSID;
-    Serial.println("No saving SSID for external AP! Loading Default AP:"+jdata.ssid+"/"+jdata.password);
+    Serial.println("Start as default AP:"+jdata.ssid+"/"+jdata.password);
   }
   // Station mode
   else{
@@ -380,8 +381,9 @@ bool WiFi_connect(Parameters *jdata, WiFiServer *server)
     server->begin();
     return 1;
   }
-  else 
+  else {
     return 0;
+  }
 }
 void RTC_init(Parameters *jdata,RTC_DS3231 *rtc)
 {
