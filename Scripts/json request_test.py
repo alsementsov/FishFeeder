@@ -1,36 +1,34 @@
 # -*- coding: utf-8 -*-
 import requests
 import json
+
 url = 'http://192.168.0.1'
 
-ID=1
 #Choose command
-SW=0
+SW=10
 
 if SW==0:
-    payload = {'ID': ID,'Command':0}
+    payload = {'Command':0}
 elif SW==1:
-    payload = {'ID': ID,'Command':1,'Data':{'Time':'2020-08-29T13:40:00'}}
+    payload = {'Command':1,'Data':{'Time':'2020-08-29T13:40:00'}}
 elif SW==2:
-    payload = {'ID': ID,'Command':2,'Data':{'EjectStart':'09:34','EjectEnd':'19:00','EjectFreq':100,'EjectWeight':700}}
+    payload = {'Command':2,'Data':{'EjectStart':'09:34','EjectEnd':'19:00','EjectFreq':100,'EjectWeight':700}}
 elif SW==3:
-    payload = {'ID': ID,'Command':3,'Data':{'IDnew':1}}
+    payload = {'Command':3} # Тарировка  
 elif SW==4:
-    payload = {'ID': ID,'Command':4} # Тарировка  
+    payload = {'Command':4} # Калибровка
 elif SW==5:
-    payload = {'ID': ID,'Command':5} # Калибровка
+    payload = {'Command':5} # Старт очистки
 elif SW==6:
-    payload = {'ID': ID,'Command':6} # Старт очистки
+    payload = {'Command':6} # Стоп очистки
 elif SW==7:
-    payload = {'ID': ID,'Command':7} # Стоп очистки
+    payload = {'Command':7} # Глобальный СТОП 
 elif SW==8:
-    payload = {'ID': ID,'Command':8} # Глобальный СТОП 
+    payload = {'Command':8} # Отключение СТОПа - ГЛОБАЛЬНЫЙ СТАРТ
 elif SW==9:
-    payload = {'ID': ID,'Command':9} # Отключение СТОПа - ГЛОБАЛЬНЫЙ СТАРТ
+    payload = {'Command':9,'Data':{'DefConsump':1000,'Status':1}} # Расход по умолчанию и режим автокоррекции
 elif SW==10:
-    payload = {'ID': ID,'Command':10,'Data':{'DefConsump':1000,'Status':1}} # Расход по умолчанию и режим автокоррекции
-elif SW==11:
-    payload = {'ID': ID,'Command':11,'Data':{'SSID':'ABS','Password':'13121985','Mode':'0'}} # AP
+    payload = {'Command':10,'Data':{'SSID':'ABS','Password':'13121985','Mode':'1'}} # AP
 
 headers = {'content-type': 'application/json'}
 

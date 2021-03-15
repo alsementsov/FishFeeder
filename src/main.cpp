@@ -44,7 +44,7 @@ void setup() {
   jdata = ReadParameters();
   // RTC starting
   RTC_init(&jdata,&rtc); // было выше чтения параметров
-  Serial.print("ID: ");Serial.println(jdata.ID_f);
+  Serial.print("IP: ");Serial.println(jdata.IP);
   // WIFi starting
   if (jdata.Mode ==0){
     //AP start
@@ -58,6 +58,16 @@ void setup() {
   else {
     //Station start
     unsigned long t = millis();
+    // Задаем статический IP-адрес:
+    String myip="192.168.0.109";
+    IPAddress local_IP;
+    bool x = local_IP.fromString(myip);
+    // Задаем IP-адрес сетевого шлюза:
+    IPAddress gateway(192, 168, 0, 1);
+    IPAddress subnet(255, 255, 0, 0);
+    // Настраиваем статический IP-адрес:
+    if (!WiFi.config(local_IP, gateway, subnet)) {
+      Serial.println("STA Failed to configure");  }
     while ((Connect_ExtAP==0)&&((millis()-t)<10000))    
     {
       Connect_ExtAP = WiFi_connect(&jdata, &server);  

@@ -40,7 +40,9 @@ using namespace std;
 #define OWN_PWD "14091982" 
 
 struct Parameters
-{   int ID_f;
+{   
+    String IP;
+    String IPR;
     int Hour_start;
     int Minute_start;
     int Hour_end;
