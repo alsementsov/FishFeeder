@@ -165,7 +165,7 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
     Serial.println(*s); 
     DynamicJsonDocument doc(256);
     DeserializationError error = deserializeJson(doc, *s);
-    if (error)  {Serial.println("Json error");}
+    if (error)  {Serial.println("Json error !");}
     cmd = doc["Command"];
     Serial.print(" / CMD=");Serial.println(cmd); 
         // 1 - Обновление времени (TIME UPDATE)
@@ -255,7 +255,7 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
           EEPROM.write(9,lowByte(jdata->Consumption));
           EEPROM.write(10,jdata->Status);
           EEPROM.commit();
-          Serial.println(" -> NEW Consumption="+String(jdata->Consumption)+" / Adjustment_mode="+String(bitRead(jdata->Status,STATUS_ADJUSTMENT)));
+          Serial.println(" -> NEW Consumption= "+String(jdata->Consumption)+" / Adjustment_mode= "+String(bitRead(jdata->Status,STATUS_ADJUSTMENT)));
         }
         //10 - SSID+PWD
         else if (cmd== 10){
@@ -307,7 +307,7 @@ struct Parameters ReadParameters()
   if (jdata.Mode == 0){
     jdata.password = OWN_PWD;
     jdata.ssid = OWN_SSID;
-    Serial.println("Start as default AP:"+jdata.ssid+"/"+jdata.password);
+    Serial.println("Start as default AP: "+jdata.ssid+" / "+jdata.password);
   }
   // Station mode
   else
@@ -323,13 +323,13 @@ struct Parameters ReadParameters()
     num_2 = recivedData.indexOf(":", num_1 + 1);
     String S_IPR = recivedData.substring(num_1+1,recivedData.length()-1);
     jdata.ssid = S_login;
-    Serial.print("Ext.AP: SSID="); Serial.print(jdata.ssid);
+    Serial.print("Ext.AP: SSID= "); Serial.print(jdata.ssid);
     jdata.password = S_pwd;
-    Serial.print(" / Password="); Serial.print(jdata.password);
+    Serial.print(" / Password= "); Serial.print(jdata.password);
     jdata.IP= S_IP;
-    Serial.print(" / IP="); Serial.print(jdata.IP);
+    Serial.print(" / IP= "); Serial.print(jdata.IP);
     jdata.IPR = S_IPR;
-    Serial.print(" / IP_gateway="); Serial.println(jdata.IPR);
+    Serial.print(" / IP_gateway= "); Serial.println(jdata.IPR);
   }
   return jdata; 
 }
@@ -366,14 +366,14 @@ bool WiFi_connect(Parameters *jdata, WiFiServer *server)
   { 
     String temp_ssid = jdata->ssid;
     String temp_pwd = jdata->password;
-    Serial.print("Connecting to:");Serial.println(&temp_ssid[0]);
+    Serial.print("-----> Connecting to: ");Serial.println(&temp_ssid[0]);
     WiFi.begin(&temp_ssid[0],&temp_pwd[0]);
 
   }
   // Запуск сервера если есть подключение по Wifi
   if (WiFi.status() == WL_CONNECTED)
   {
-    Serial.print("WiFi connected/"); Serial.print("IP address: ");
+    Serial.print("WiFi connected / "); Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
     server->begin();
     return 1;

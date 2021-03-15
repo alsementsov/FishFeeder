@@ -25,6 +25,11 @@ bool flag_calc = 0;
 long Consumption_temp;
 unsigned long Tstart_clean=0;
 long Wstart_clean=0;
+bool IP_flag;
+bool IPR_flag;
+IPAddress local_IP;
+IPAddress gateway_IP; 
+IPAddress subnet(255, 255, 255, 0); // По умолчанию
 
 ///////////////////////////// SETUP ////////////////////////////////////////////////////
 void setup() {
@@ -50,12 +55,9 @@ void setup() {
   if (jdata.Mode ==1) {
     unsigned long t = millis();
     // Задаем статический IP-адрес:
-    IPAddress local_IP;
-    bool IP_flag = local_IP.fromString(jdata.IP);
+    IP_flag = local_IP.fromString(jdata.IP);
     // Задаем IP-адрес сетевого шлюза:
-    IPAddress gateway_IP; 
-    bool IPR_flag = gateway_IP.fromString(jdata.IPR);
-    IPAddress subnet(255, 255, 255, 0); // По умолчанию
+    IPR_flag = gateway_IP.fromString(jdata.IPR);
     // Настраиваем статический IP-адрес:
     if ((!WiFi.config(local_IP, gateway_IP, subnet))||(IP_flag==0)||(IPR_flag==0)) {
       Serial.println("-----> ERROR  - STA Failed to configure !"); // Если есть ошибка в конфигурации сети
@@ -294,16 +296,26 @@ void loop() {
   }  
   else
   {
-      String s;
-      s = Client_connect(&rtc,&jdata,&server,&scale);
-      ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
-      if (jdata.Mode==1)
-      {
-        String temp_ssid = jdata.ssid;
-        String temp_pwd = jdata.password;
-        WiFi.begin(&temp_ssid[0],&temp_pwd[0]); //новые параметры из jdata
-        Serial.print("Start as STA = ");Serial.println(temp_ssid+"/"+temp_pwd);
+    String s;
+    s = Client_connect(&rtc,&jdata,&server,&scale);
+    ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
+    if (jdata.Mode==1)
+    {
+      String temp_ssid = jdata.ssid;
+      String temp_pwd = jdata.password;
+      IP_flag = local_IP.fromString(jdata.IP);
+      IPR_flag = gateway_IP.fromString(jdata.IPR);
+      // Настраиваем статический IP-адрес:
+      if ((!WiFi.config(local_IP, gateway_IP, subnet))||(IP_flag==0)||(IPR_flag==0)) {
+        Serial.println("-----> ERROR  - STA Failed to configure !"); // Если есть ошибка в конфигурации сети
+        jdata.Mode=0; // остаемся на дефолтной AP
       }
+      else
+      {
+        WiFi.begin(&temp_ssid[0],&temp_pwd[0]); //новые параметры из jdata
+        Serial.print("Start as STA = ");Serial.println(temp_ssid+" / "+temp_pwd+" / IP= "+jdata.IP+" / IPg="+jdata.IPR);
+      }
+    } 
   }
   if (firstloop ==1)  {firstloop = 0;}
 }
