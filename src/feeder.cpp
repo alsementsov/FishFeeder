@@ -264,8 +264,12 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
         jdata->ssid = String(ch_ssid);
         jdata->password = String(ch_pwd);
         jdata->Mode = doc["Data"]["Mode"];
-        String wr_data = jdata->ssid+':'+jdata->password+'&';
         EEPROM.write(19,doc["Data"]["Mode"]);
+        const char *ch_IP = doc["Data"]["IP"];
+        const char *ch_IPR = doc["Data"]["IPR"];
+        jdata->IP = String(ch_IP);
+        jdata->IPR = String(ch_IPR);
+        String wr_data = jdata->ssid+':'+jdata->password+':'+jdata->IP+':'+jdata->IPR+'&';
         EEPROM_String_write(20,wr_data);
         EEPROM.commit();
         Serial.print("Write auth.data = "+wr_data+" / Mode = "); Serial.println(jdata->Mode);
@@ -306,16 +310,26 @@ struct Parameters ReadParameters()
     Serial.println("Start as default AP:"+jdata.ssid+"/"+jdata.password);
   }
   // Station mode
-  else{
+  else
+  {
     String recivedData;
-    recivedData = EEPROM_String_read(20);//
-    int num = recivedData.indexOf(':');
-    String S_login = recivedData.substring(0,num);
-    String pwd = recivedData.substring(num+1,recivedData.length()-1);
+    recivedData = EEPROM_String_read(20);
+    int num_1 = recivedData.indexOf(":",0);
+    String S_login = recivedData.substring(0,num_1);
+    int num_2 = recivedData.indexOf(":", num_1 + 1);
+    String S_pwd = recivedData.substring(num_1+1,num_2);
+    num_1 = recivedData.indexOf(":", num_2 + 1);
+    String S_IP = recivedData.substring(num_2+1,num_1);
+    num_2 = recivedData.indexOf(":", num_1 + 1);
+    String S_IPR = recivedData.substring(num_1+1,recivedData.length()-1);
     jdata.ssid = S_login;
     Serial.print("Ext.AP: SSID="); Serial.print(jdata.ssid);
-    jdata.password = pwd;
-    Serial.print(" / Password="); Serial.println(jdata.password);
+    jdata.password = S_pwd;
+    Serial.print(" / Password="); Serial.print(jdata.password);
+    jdata.IP= S_IP;
+    Serial.print(" / IP="); Serial.print(jdata.IP);
+    jdata.IPR = S_IPR;
+    Serial.print(" / IP_gateway="); Serial.println(jdata.IPR);
   }
   return jdata; 
 }
