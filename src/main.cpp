@@ -18,7 +18,7 @@ int N = 0;
 unsigned long delta =0;
 long Weight_before;
 uint16_t NoChanging_cnt=0;
-bool firstloop;
+bool firstloop=1;
 bool Connect_ExtAP=0;
 bool feed = 0;
 bool flag_calc = 0;
@@ -52,6 +52,7 @@ void setup() {
   Serial.print("IP: ");Serial.println(jdata.IP);
   Serial.print("IP_gateway: ");Serial.println(jdata.IPR);
   // Station starting
+
   if (jdata.Mode ==1) {
     unsigned long t = millis();
     // Задаем статический IP-адрес:
@@ -70,8 +71,7 @@ void setup() {
       }
       if (WiFi.getAutoConnect() != true) WiFi.setAutoConnect(true);  //on power-on automatically connects to last used hwAP
       WiFi.setAutoReconnect(true);
-      firstloop = 1;
-    }
+     }
   }
   if (jdata.Mode ==0){
     //AP start
@@ -270,7 +270,7 @@ void loop() {
   //////////////////////////////////////////////////////
   if (jdata.Mode==1)
   {
-    if ((Connect_ExtAP==0)&&(firstloop==0)){
+    if (Connect_ExtAP==0){
       Connect_ExtAP =  WiFi_connect(&jdata, &server);
     }
     else if (WiFi.status() != WL_CONNECTED)
@@ -294,15 +294,15 @@ void loop() {
       }
     }
   }  
-  else
+  else //Mode=0
   {
     String s;
     s = Client_connect(&rtc,&jdata,&server,&scale);
     ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
     if (jdata.Mode==1)
     {
-      String temp_ssid = jdata.ssid;
-      String temp_pwd = jdata.password;
+      //String temp_ssid = jdata.ssid;
+      //String temp_pwd = jdata.password;
       IP_flag = local_IP.fromString(jdata.IP);
       IPR_flag = gateway_IP.fromString(jdata.IPR);
       // Настраиваем статический IP-адрес:
@@ -312,10 +312,11 @@ void loop() {
       }
       else
       {
-        WiFi.begin(&temp_ssid[0],&temp_pwd[0]); //новые параметры из jdata
-        Serial.print("Start as STA = ");Serial.println(temp_ssid+" / "+temp_pwd+" / IP= "+jdata.IP+" / IPg="+jdata.IPR);
+        //WiFi.begin(&temp_ssid[0],&temp_pwd[0]); //новые параметры из jdata
+        Connect_ExtAP =  WiFi_connect(&jdata, &server);
+        Serial.print("Start as STA = ");Serial.println(jdata.ssid +" / "+jdata.password+" / IP= "+jdata.IP+" / IPg="+jdata.IPR);
       }
     } 
   }
-  if (firstloop ==1)  {firstloop = 0;}
+  //if (firstloop ==1)  {firstloop = 0;}
 }
