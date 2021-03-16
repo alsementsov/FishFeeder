@@ -18,7 +18,6 @@ int N = 0;
 unsigned long delta =0;
 long Weight_before;
 uint16_t NoChanging_cnt=0;
-bool firstloop=1;
 bool Connect_ExtAP=0;
 bool feed = 0;
 bool flag_calc = 0;
@@ -30,11 +29,14 @@ bool IPR_flag;
 IPAddress local_IP;
 IPAddress gateway_IP; 
 IPAddress subnet(255, 255, 255, 0); // По умолчанию
+uint8_t cmd;
+button button_AP(PIN_RESET_AP); 
 
 ///////////////////////////// SETUP ////////////////////////////////////////////////////
 void setup() {
   //Обнуление статуса ошибок при старта
   Serial.begin(115200);
+  pinMode (PIN_RESET_AP,INPUT_PULLUP)
   pinMode(MOTORPIN, OUTPUT); 
   pinMode(LED1, OUTPUT);  pinMode(LED2, OUTPUT);
   pinMode(LED3, OUTPUT);  pinMode(LEDEXT, OUTPUT);
@@ -268,7 +270,8 @@ void loop() {
   //////////////////////////////////////////////////////
   ///////////////////// WIFI ///////////////////////////
   //////////////////////////////////////////////////////
-  if (jdata.Mode==1)
+  cmd=0;
+  if (jdata.Mode==1) // STA mode
   {
     if (Connect_ExtAP==0){
       Connect_ExtAP =  WiFi_connect(&jdata, &server);
@@ -282,27 +285,27 @@ void loop() {
     {
       String s;
       s = Client_connect(&rtc,&jdata,&server,&scale);
-      ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
-      if (jdata.Mode==0)
-      {
-        IPAddress apIP(192, 168, 0, 1);
-        WiFi.mode(WIFI_AP);
-        WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-        WiFi.softAP(OWN_SSID, OWN_PWD);
-        Serial.print("Start as AP: ");Serial.println(WiFi.softAPIP());
-        server.begin();
-      }
+      cmd = ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
     }
-  }  
-  else //Mode=0
+  }
+  else
   {
     String s;
     s = Client_connect(&rtc,&jdata,&server,&scale);
-    ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
-    if (jdata.Mode==1)
+    cmd = ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
+  }
+  // Обаботка кнопки
+  if (button_AP.click()){
+    cmd=10;
+    jdata.mode=0;
+    EEPROM.write(19,0);
+    EEPROM.commit();
+  }
+  // Если была команда смены режима wi-fi
+  if (cmd==10)
+  {
+    if (jdata.Mode==1) // STA mode
     {
-      //String temp_ssid = jdata.ssid;
-      //String temp_pwd = jdata.password;
       IP_flag = local_IP.fromString(jdata.IP);
       IPR_flag = gateway_IP.fromString(jdata.IPR);
       // Настраиваем статический IP-адрес:
@@ -316,7 +319,15 @@ void loop() {
         Connect_ExtAP =  WiFi_connect(&jdata, &server);
         Serial.print("Start as STA = ");Serial.println(jdata.ssid +" / "+jdata.password+" / IP= "+jdata.IP+" / IPg="+jdata.IPR);
       }
-    } 
+    }
+    if (jdata.Mode==0) // AP mode
+    {
+      IPAddress apIP(192, 168, 0, 1);
+      WiFi.mode(WIFI_AP);
+      WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+      WiFi.softAP(OWN_SSID, OWN_PWD);
+      Serial.print("Start as AP: ");Serial.println(WiFi.softAPIP());
+      server.begin();
+    }
   }
-  //if (firstloop ==1)  {firstloop = 0;}
 }

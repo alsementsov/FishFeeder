@@ -154,13 +154,17 @@ void Calculate_timings(Parameters *jdata, timings *Feed_timings){
   Serial.print("Consumption(mg/sec) = ");Serial.println(jdata->Consumption);
 }
 // Парсинг запроса
-void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings,HX711 *scale)
+uint8_t ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings,HX711 *scale)
 {
-  int cmd;
+  uint8_t cmd;
   const char* str_temp;
   String strt;
   String sval;
-  if (*s!=""){
+
+  cmd=0;
+  //если не пустая строка - те есть запрос
+  if (*s!="")
+  {
     Serial.print("JSON request = ");
     Serial.println(*s); 
     DynamicJsonDocument doc(256);
@@ -168,113 +172,123 @@ void ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings
     if (error)  {Serial.println("Json error !");}
     cmd = doc["Command"];
     Serial.print(" / CMD=");Serial.println(cmd); 
-        // 1 - Обновление времени (TIME UPDATE)
-        if (cmd == 1){
-          str_temp  = doc["Data"]["Time"];
-          rtc->adjust(DateTime(str_temp));
-          Serial.println(" -> Time has been updated");
-        }
-        // 2 - Обновление режима кормления (FEEDING SETTINGS)
-        else if (cmd == 2){
-        str_temp  = doc["Data"]["EjectStart"];
-        strt=str_temp;
-        sval = strt.substring(0,2);
-        jdata->Hour_start = sval.toInt();
-        sval = strt.substring(3);
-        jdata->Minute_start = sval.toInt();
-        str_temp  = doc["Data"]["EjectEnd"];
-        strt=str_temp;
-        sval = strt.substring(0,2);
-        jdata->Hour_end = sval.toInt();
-        sval = strt.substring(3);
-        jdata->Minute_end = sval.toInt();
-        jdata->NperDay = doc["Data"]["EjectFreq"];
-        jdata->WperDay = doc["Data"]["EjectWeight"];
-        //EEPROM.begin(9);
-        EEPROM.write(0,jdata->Hour_start);
-        EEPROM.write(1,jdata->Minute_start);
-        EEPROM.write(2,jdata->Hour_end);
-        EEPROM.write(3,jdata->Minute_end);
-        EEPROM.write(4,highByte(jdata->NperDay));
-        EEPROM.write(5,lowByte(jdata->NperDay));
-        EEPROM.write(6,highByte(jdata->WperDay));
-        EEPROM.write(7,lowByte(jdata->WperDay));
-        EEPROM.commit();
-        Serial.println(" -> Mode has been updated:");
-        Calculate_timings(jdata,Feed_timings);
-        }
-        // 3 - Тарировка (нужно чтобы измерялся вес и записывался в EEPROM а также вычитался при старте из текущего веса)
-        else if (cmd==3){
-          scale->set_scale();   // выполняем измерение значения без калибровочного коэффициента
-          jdata->Offset = scale->read_average(10); 
-          scale->set_offset(jdata->Offset);
-          EEPROM_long_write(15,jdata->Offset);
-          scale->set_scale(jdata->CalFactor);
-          Serial.print(" -> OFSSET has been updated = ");Serial.println(jdata->Offset);
-        }
-        // 4 - Калибровка
-        else if (cmd==4){
-          jdata->CalFactor =  Calibrate(scale,jdata);
-          EEPROM_float_write(11,jdata->CalFactor);
-          Serial.print(" -> CALFACTOR has been updated =");Serial.println(jdata->CalFactor);
-        }
-        // 5 - Очистка - старт 
-        else if (cmd==5){
-          bitSet(jdata->Status,STATUS_CLEAN);
-          Serial.println("-> START CLEANING...");
-        }
-        // 6 - Очистка - отключение
-        else if (cmd==6){
-          bitClear(jdata->Status,STATUS_CLEAN);
-          Serial.println(" -> END CLEANING !");
-          digitalWrite(MOTORPIN,LOW);
-          digitalWrite(LED1,LOW);
-        }
-        // 7 - ГЛОБАЛЬНЫЙ СТОП
-        else if (cmd==7){
-          bitSet(jdata->Status,STATUS_STOP);
-          Serial.print(" -> STOP !");
-          digitalWrite(MOTORPIN,LOW);
-          digitalWrite(LED1,LOW);
-        }
-        // 8 - Отключение СТОПа - ГЛОБАЛЬНЫЙ СТАРТ
-        else if (cmd==8){
-          bitClear(jdata->Status,STATUS_STOP);
-          Serial.print(" -> START...");
-        }
-        // 9 - Обновление расхода по умолчанию (CONSUMPTION)
-        else if (cmd== 9){
-          jdata->Consumption = doc["Data"]["DefConsump"];
-          uint8_t status_from_server = doc["Status"];
-          if ((bitRead(status_from_server,STATUS_ADJUSTMENT))==1)
-            bitSet(jdata->Status,STATUS_ADJUSTMENT);
-          else
-            bitClear(jdata->Status,STATUS_ADJUSTMENT);
-          //EEPROM.begin(12);
-          EEPROM.write(8,highByte(jdata->Consumption));
-          EEPROM.write(9,lowByte(jdata->Consumption));
-          EEPROM.write(10,jdata->Status);
-          EEPROM.commit();
-          Serial.println(" -> NEW Consumption= "+String(jdata->Consumption)+" / Adjustment_mode= "+String(bitRead(jdata->Status,STATUS_ADJUSTMENT)));
-        }
-        //10 - SSID+PWD
-        else if (cmd== 10){
-        const char *ch_ssid = doc["Data"]["SSID"];
-        const char *ch_pwd = doc["Data"]["Password"];
-        jdata->ssid = String(ch_ssid);
-        jdata->password = String(ch_pwd);
-        jdata->Mode = doc["Data"]["Mode"];
-        EEPROM.write(19,doc["Data"]["Mode"]);
-        const char *ch_IP = doc["Data"]["IP"];
-        const char *ch_IPR = doc["Data"]["IPR"];
-        jdata->IP = String(ch_IP);
-        jdata->IPR = String(ch_IPR);
-        String wr_data = jdata->ssid+':'+jdata->password+':'+jdata->IP+':'+jdata->IPR+'&';
-        EEPROM_String_write(20,wr_data);
-        EEPROM.commit();
-        Serial.print("Write auth.data = "+wr_data+" / Mode = "); Serial.println(jdata->Mode);
-        }
+    // 1 - Обновление времени (TIME UPDATE)
+    if (cmd == 1)
+    {
+      str_temp  = doc["Data"]["Time"];
+      rtc->adjust(DateTime(str_temp));
+      Serial.println(" -> Time has been updated");
+    }
+    // 2 - Обновление режима кормления (FEEDING SETTINGS)
+    else if (cmd == 2)
+    {
+      str_temp  = doc["Data"]["EjectStart"];
+      strt=str_temp;
+      sval = strt.substring(0,2);
+      jdata->Hour_start = sval.toInt();
+      sval = strt.substring(3);
+      jdata->Minute_start = sval.toInt();
+      str_temp  = doc["Data"]["EjectEnd"];
+      strt=str_temp;
+      sval = strt.substring(0,2);
+      jdata->Hour_end = sval.toInt();
+      sval = strt.substring(3);
+      jdata->Minute_end = sval.toInt();
+      jdata->NperDay = doc["Data"]["EjectFreq"];
+      jdata->WperDay = doc["Data"]["EjectWeight"];
+      //EEPROM.begin(9);
+      EEPROM.write(0,jdata->Hour_start);
+      EEPROM.write(1,jdata->Minute_start);
+      EEPROM.write(2,jdata->Hour_end);
+      EEPROM.write(3,jdata->Minute_end);
+      EEPROM.write(4,highByte(jdata->NperDay));
+      EEPROM.write(5,lowByte(jdata->NperDay));
+      EEPROM.write(6,highByte(jdata->WperDay));
+      EEPROM.write(7,lowByte(jdata->WperDay));
+      EEPROM.commit();
+      Serial.println(" -> Mode has been updated:");
+      Calculate_timings(jdata,Feed_timings);
+    }
+    // 3 - Тарировка (нужно чтобы измерялся вес и записывался в EEPROM а также вычитался при старте из текущего веса)
+    else if (cmd==3)
+    {
+      scale->set_scale();   // выполняем измерение значения без калибровочного коэффициента
+      jdata->Offset = scale->read_average(10); 
+      scale->set_offset(jdata->Offset);
+      EEPROM_long_write(15,jdata->Offset);
+      scale->set_scale(jdata->CalFactor);
+      Serial.print(" -> OFSSET has been updated = ");Serial.println(jdata->Offset);
+    }
+    // 4 - Калибровка
+    else if (cmd==4)
+    {
+      jdata->CalFactor =  Calibrate(scale,jdata);
+      EEPROM_float_write(11,jdata->CalFactor);
+      Serial.print(" -> CALFACTOR has been updated =");Serial.println(jdata->CalFactor);
+    }
+    // 5 - Очистка - старт 
+    else if (cmd==5)
+    {
+      bitSet(jdata->Status,STATUS_CLEAN);
+      Serial.println("-> START CLEANING...");
+    }
+    // 6 - Очистка - отключение
+    else if (cmd==6)
+    {
+      bitClear(jdata->Status,STATUS_CLEAN);
+      Serial.println(" -> END CLEANING !");
+      digitalWrite(MOTORPIN,LOW);
+      digitalWrite(LED1,LOW);
+    }
+    // 7 - ГЛОБАЛЬНЫЙ СТОП
+    else if (cmd==7)
+    {
+      bitSet(jdata->Status,STATUS_STOP);
+      Serial.print(" -> STOP !");
+      digitalWrite(MOTORPIN,LOW);
+      digitalWrite(LED1,LOW);
+    }
+    // 8 - Отключение СТОПа - ГЛОБАЛЬНЫЙ СТАРТ
+    else if (cmd==8)
+    {
+      bitClear(jdata->Status,STATUS_STOP);
+      Serial.print(" -> START...");
+    }
+    // 9 - Обновление расхода по умолчанию (CONSUMPTION)
+    else if (cmd== 9)
+    {
+      jdata->Consumption = doc["Data"]["DefConsump"];
+      uint8_t status_from_server = doc["Status"];
+      if ((bitRead(status_from_server,STATUS_ADJUSTMENT))==1)
+        bitSet(jdata->Status,STATUS_ADJUSTMENT);
+      else
+        bitClear(jdata->Status,STATUS_ADJUSTMENT);
+      //EEPROM.begin(12);
+      EEPROM.write(8,highByte(jdata->Consumption));
+      EEPROM.write(9,lowByte(jdata->Consumption));
+      EEPROM.write(10,jdata->Status);
+      EEPROM.commit();
+      Serial.println(" -> NEW Consumption= "+String(jdata->Consumption)+" / Adjustment_mode= "+String(bitRead(jdata->Status,STATUS_ADJUSTMENT)));
+    }
+    //10 - SSID+PWD
+    else if (cmd== 10)
+    {
+      const char *ch_ssid = doc["Data"]["SSID"];
+      const char *ch_pwd = doc["Data"]["Password"];
+      jdata->ssid = String(ch_ssid);
+      jdata->password = String(ch_pwd);
+      jdata->Mode = doc["Data"]["Mode"];
+      EEPROM.write(19,doc["Data"]["Mode"]);
+      const char *ch_IP = doc["Data"]["IP"];
+      const char *ch_IPR = doc["Data"]["IPR"];
+      jdata->IP = String(ch_IP);
+      jdata->IPR = String(ch_IPR);
+      String wr_data = jdata->ssid+':'+jdata->password+':'+jdata->IP+':'+jdata->IPR+'&';
+      EEPROM_String_write(20,wr_data);
+      EEPROM.commit();
+    }
   }
+  return cmd;
 }
 // Чтение параметров из памяти
 struct Parameters ReadParameters()
