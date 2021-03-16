@@ -2,10 +2,10 @@
 import requests
 import json
 
-url = 'http://192.168.0.1'
+url = 'http://192.168.0.111'
 
 #Choose command
-SW = 10
+SW = 0
 
 if SW==0:
     payload = {'Command':0}

@@ -36,7 +36,7 @@ button button_AP(PIN_RESET_AP);
 void setup() {
   //Обнуление статуса ошибок при старта
   Serial.begin(115200);
-  pinMode (PIN_RESET_AP,INPUT_PULLUP)
+  pinMode (PIN_RESET_AP,INPUT_PULLUP);
   pinMode(MOTORPIN, OUTPUT); 
   pinMode(LED1, OUTPUT);  pinMode(LED2, OUTPUT);
   pinMode(LED3, OUTPUT);  pinMode(LEDEXT, OUTPUT);
@@ -294,14 +294,14 @@ void loop() {
     s = Client_connect(&rtc,&jdata,&server,&scale);
     cmd = ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
   }
-  // Обаботка кнопки
+  /////// Обаботка кнопки ////////
   if (button_AP.click()){
     cmd=10;
-    jdata.mode=0;
+    jdata.Mode=0;
     EEPROM.write(19,0);
     EEPROM.commit();
   }
-  // Если была команда смены режима wi-fi
+  /////// Если была команда смены режима wi-fi //////
   if (cmd==10)
   {
     if (jdata.Mode==1) // STA mode
