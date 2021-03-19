@@ -57,8 +57,7 @@ String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX7
             // Передача параметров обратно на сервер опроса
             client.print("{\"Status\":");
             client.print(jdata->Status); 
-            client.print(",\"Data\":{"); //DATA structure
-            client.print("\"Time\":\"");client.print(prtc.timestamp());
+            client.print(",\"Time\":\"");client.print(prtc.timestamp());
             char bufs[5];
             sprintf(bufs, "%02d:%02d",jdata->Hour_start,jdata->Minute_start);
             client.print("\",\"EjectStart\":\"");client.print(bufs);
@@ -72,7 +71,7 @@ String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX7
             client.print(Weight_cur);//jdata->Weight); 
             client.print(",\"DefConsump\":");
             client.print(jdata->Consumption);
-            client.print("}}"); 
+            client.print("}"); 
             client.println(); 
             break;
        }
@@ -175,27 +174,27 @@ uint8_t ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timi
     // 1 - Обновление времени (TIME UPDATE)
     if (cmd == 1)
     {
-      str_temp  = doc["Data"]["Time"];
+      str_temp  = doc["Time"];
       rtc->adjust(DateTime(str_temp));
       Serial.println(" -> Time has been updated");
     }
     // 2 - Обновление режима кормления (FEEDING SETTINGS)
     else if (cmd == 2)
     {
-      str_temp  = doc["Data"]["EjectStart"];
+      str_temp  = doc["EjectStart"];
       strt=str_temp;
       sval = strt.substring(0,2);
       jdata->Hour_start = sval.toInt();
       sval = strt.substring(3);
       jdata->Minute_start = sval.toInt();
-      str_temp  = doc["Data"]["EjectEnd"];
+      str_temp  = doc["EjectEnd"];
       strt=str_temp;
       sval = strt.substring(0,2);
       jdata->Hour_end = sval.toInt();
       sval = strt.substring(3);
       jdata->Minute_end = sval.toInt();
-      jdata->NperDay = doc["Data"]["EjectFreq"];
-      jdata->WperDay = doc["Data"]["EjectWeight"];
+      jdata->NperDay = doc["EjectFreq"];
+      jdata->WperDay = doc["EjectWeight"];
       //EEPROM.begin(9);
       EEPROM.write(0,jdata->Hour_start);
       EEPROM.write(1,jdata->Minute_start);
@@ -257,7 +256,7 @@ uint8_t ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timi
     // 9 - Обновление расхода по умолчанию (CONSUMPTION)
     else if (cmd== 9)
     {
-      jdata->Consumption = doc["Data"]["DefConsump"];
+      jdata->Consumption = doc["DefConsump"];
       uint8_t status_from_server = doc["Status"];
       if ((bitRead(status_from_server,STATUS_ADJUSTMENT))==1)
         bitSet(jdata->Status,STATUS_ADJUSTMENT);
@@ -273,14 +272,14 @@ uint8_t ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timi
     //10 - SSID+PWD
     else if (cmd== 10)
     {
-      const char *ch_ssid = doc["Data"]["SSID"];
-      const char *ch_pwd = doc["Data"]["Password"];
+      const char *ch_ssid = doc["SSID"];
+      const char *ch_pwd = doc["Password"];
       jdata->ssid = String(ch_ssid);
       jdata->password = String(ch_pwd);
-      jdata->Mode = doc["Data"]["Mode"];
-      EEPROM.write(19,doc["Data"]["Mode"]);
-      const char *ch_IP = doc["Data"]["IP"];
-      const char *ch_IPR = doc["Data"]["IPR"];
+      jdata->Mode = doc["Mode"];
+      EEPROM.write(19,doc["Mode"]);
+      const char *ch_IP = doc["IP"];
+      const char *ch_IPR = doc["IPR"];
       jdata->IP = String(ch_IP);
       jdata->IPR = String(ch_IPR);
       String wr_data = jdata->ssid+':'+jdata->password+':'+jdata->IP+':'+jdata->IPR+'&';
