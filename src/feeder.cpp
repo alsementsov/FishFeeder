@@ -24,11 +24,13 @@ bool SmartDelay (const unsigned long Tdelay)
   return flag;
 }
 
-String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX711 *scale){
+String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX711 *scale)
+{
   String StrokaParametrov = "";
   WiFiClient client = server->available(); 
  // listen for incoming clients
-  if (client) {                             // if you get a client,
+  if (client) 
+  {                             // if you get a client,
     Serial.print("...... New connection ......");           // print a message out the serial port
     String currentLine = "";
     boolean flag = false; 
@@ -36,9 +38,11 @@ String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX7
     //delay(50); // Заменено на чтение RTC 
     DateTime prtc = rtc->now(); //Измерение времени если есть новое соединение
     long Weight_cur = MeausureWeight(scale);//Измерение текущего веса
-    while (client.connected()) { 
+    while (client.connected()) 
+    { 
       // loop while the client's connected
-       if (client.available() or (flag==false)) { 
+       if (client.available() or (flag==false)) 
+       { 
         // if there's bytes to read from the client,
         char c = client.read();   
         //Serial.print(c); // read a byte, then
@@ -49,7 +53,8 @@ String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX7
           StrokaParametrov += c;
           }
       }
-      else {
+      else 
+      {
             Serial.println("Answer...");
             client.println("HTTP/1.1 200 OK");
             client.println("Content-Type: application/json");
@@ -75,9 +80,9 @@ String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX7
             client.println(); 
             break;
        }
-      }
-      client.stop();
     }
+    client.stop();
+  }
     return StrokaParametrov;
 }
 void EEPROM_float_write(int addr, float val) // запись в ЕЕПРОМ
@@ -381,7 +386,6 @@ bool WiFi_connect(Parameters *jdata, WiFiServer *server)
     String temp_pwd = jdata->password;
     Serial.print("-----> Connecting to: ");Serial.println(&temp_ssid[0]);
     WiFi.begin(&temp_ssid[0],&temp_pwd[0]);
-
   }
   // Запуск сервера если есть подключение по Wifi
   if (WiFi.status() == WL_CONNECTED)

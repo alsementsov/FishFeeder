@@ -62,7 +62,8 @@ void setup() {
     // Задаем IP-адрес сетевого шлюза:
     IPR_flag = gateway_IP.fromString(jdata.IPR);
     // Настраиваем статический IP-адрес:
-    if ((!WiFi.config(local_IP, gateway_IP, subnet))||(IP_flag==0)||(IPR_flag==0)) {
+    if ((!WiFi.config(local_IP, gateway_IP, subnet))||(IP_flag==0)||(IPR_flag==0)) 
+    {
       Serial.println("-----> ERROR  - STA Failed to configure !"); // Если есть ошибка в конфигурации сети
       jdata.Mode=0; // переключаемся на дефолтную AP
     }

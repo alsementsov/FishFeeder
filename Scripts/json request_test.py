@@ -5,14 +5,14 @@ import json
 url = 'http://192.168.0.111'
 
 #Choose command
-SW = 0
+SW = 9
 
 if SW==0:
     payload = {'Command':0}
 elif SW==1:
     payload = {'Command':1,'Time':'2020-08-29T13:40:00'}
 elif SW==2:
-    payload = {'Command':2,'EjectStart':'09:34','EjectEnd':'19:00','EjectFreq':100,'EjectWeight':700}
+    payload = {'Command':2,'EjectStart':'01:30','EjectEnd':'07:00','EjectFreq':100,'EjectWeight':700}
 elif SW==3:
     payload = {'Command':3} # Тарировка  
 elif SW==4:
