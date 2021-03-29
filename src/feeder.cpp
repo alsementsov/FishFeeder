@@ -31,14 +31,18 @@ String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX7
  // listen for incoming clients
   if (client) 
   {                             // if you get a client,
-    Serial.print("...... New connection ......");           // print a message out the serial port
+    Serial.println("...... New connection ......");           // print a message out the serial port
     String currentLine = "";
     boolean flag = false; 
     // make a String to hold incoming data from the client
     //delay(50); // Заменено на чтение RTC 
     DateTime prtc = rtc->now(); //Измерение времени если есть новое соединение
     long Weight_cur = MeausureWeight(scale);//Измерение текущего веса
-
+    if (Weight_cur== -1)
+      bitSet(jdata->Status,STATUS_ERROR_SCALE);// Запись ошибки ВЕСОВ
+    else
+      bitClear(jdata->Status,STATUS_ERROR_SCALE);// Запись ошибки ВЕСОВ
+    //Serial.print(Weight_cur);
     while (client.connected()) 
     { 
       // loop while the client's connected
@@ -143,7 +147,7 @@ long MeausureWeight(HX711 *scale)
   if (scale->is_ready())
     return (long)(scale->get_units(10)*35.274); //0.035274;
   else
-    return 0;
+    return -1;
 }
 void Calculate_timings(Parameters *jdata, timings *Feed_timings){
   Feed_timings->Tstart = (jdata->Hour_start*3600) + (jdata->Minute_start*60);//
