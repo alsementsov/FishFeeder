@@ -38,6 +38,7 @@ String Client_connect(RTC_DS3231 *rtc, Parameters *jdata, WiFiServer *server,HX7
     //delay(50); // Заменено на чтение RTC 
     DateTime prtc = rtc->now(); //Измерение времени если есть новое соединение
     long Weight_cur = MeausureWeight(scale);//Измерение текущего веса
+
     while (client.connected()) 
     { 
       // loop while the client's connected
@@ -139,7 +140,10 @@ float Calibrate(HX711 *scale,Parameters *jdata){
 long MeausureWeight(HX711 *scale)
 // Измеряет вес в миллиграммах
 {
-  return (long)(scale->get_units(10)*35.274); //0.035274;
+  if (scale->is_ready())
+    return (long)(scale->get_units(10)*35.274); //0.035274;
+  else
+    return 0;
 }
 void Calculate_timings(Parameters *jdata, timings *Feed_timings){
   Feed_timings->Tstart = (jdata->Hour_start*3600) + (jdata->Minute_start*60);//
