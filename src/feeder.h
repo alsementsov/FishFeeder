@@ -28,13 +28,13 @@ using namespace std;
 
 // Описание битов регистра статуса
 #define STATUS_ADJUSTMENT 0 // 0 - without adj feeding timings
-#define STATUS_CLEAN      1
-#define STATUS_STOP       2
-#define STATUS_ERROR_NOCHANGING   3 //Проверяется в main в процессе кормления
-#define STATUS_ERROR_SCALE      4  //Проверяется в setup
-#define STATUS_ERROR_RTC        5  //Проверяется в setup
-#define STATUS_ERROR_Imotor     6  // Нет пока !!! - нужно тестить плату измерителя тока
-#define STATUS_RESERV   7      // В статусе AP = 1 (по умолчанию), если коннектится как Станция = 0
+#define STATUS_CLEAN 1 // 0 - нет Очистки 
+#define STATUS_STOP 2 // 0 - нет СТОПа
+#define STATUS_ERROR_NOCHANGING 3 //Проверяется в main в процессе кормления
+#define STATUS_ERROR_SCALE 4  //Проверяется в setup
+#define STATUS_ERROR_RTC 5  //Проверяется в setup
+#define STATUS_ERROR_Imotor 6  // Нет пока !!! - нужно тестить плату измерителя тока
+#define STATUS_MODE 7      // В статусе AP = 1 (по умолчанию), если коннектится как Станция = 0
 
 // AP config itself
 #define OWN_SSID "FishFeeder"
