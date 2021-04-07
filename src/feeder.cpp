@@ -388,8 +388,10 @@ String EEPROM_String_read(int addr)
 }
 bool WiFi_connect(Parameters *jdata, WiFiServer *server)
 {
-  if (SmartDelay(500)==1)
+  static uint16_t Dstart = 200;
+  if (SmartDelay(Dstart)==1)
   { 
+    Dstart = WIFI_TIMEOUT;
     String temp_ssid = jdata->ssid;
     String temp_pwd = jdata->password;
     Serial.print("-----> Connecting to: ");Serial.println(&temp_ssid[0]);

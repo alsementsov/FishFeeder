@@ -25,7 +25,7 @@ using namespace std;
 #define KF_R 0.01
 #define T_CLEAN 20000  
 #define TH_CLEAN 5000
-
+#define WIFI_TIMEOUT 4000
 // Описание битов регистра статуса
 #define STATUS_ADJUSTMENT 0 // 0 - without adj feeding timings
 #define STATUS_CLEAN 1 // 0 - нет Очистки 
