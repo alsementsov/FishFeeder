@@ -4,6 +4,9 @@
 #include <WiFi.h>
 #include <EEPROM.h>
 #include <ArduinoJson.h>
+#include <ESPmDNS.h>
+
+const char* mDNS_name = "TestName";
 
 bool SmartDelay (const unsigned long Tdelay)
 {
@@ -287,15 +290,13 @@ uint8_t ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timi
     {
       const char *ch_ssid = doc["SSID"];
       const char *ch_pwd = doc["Password"];
+      const char *ch_name = doc["Name"];
       jdata->ssid = String(ch_ssid);
       jdata->password = String(ch_pwd);
       jdata->Mode = doc["Mode"];
       EEPROM.write(19,doc["Mode"]);
-      const char *ch_IP = doc["IP"];
-      const char *ch_IPR = doc["IPR"];
-      jdata->IP = String(ch_IP);
-      jdata->IPR = String(ch_IPR);
-      String wr_data = jdata->ssid+':'+jdata->password+':'+jdata->IP+':'+jdata->IPR+'&';
+      jdata->Name = String(ch_name);
+      String wr_data = jdata->ssid+':'+jdata->password+':'+jdata->Name+'&';
       EEPROM_String_write(20,wr_data);
       EEPROM.commit();
     }
@@ -344,18 +345,13 @@ struct Parameters ReadParameters()
     String S_login = recivedData.substring(0,num_1);
     int num_2 = recivedData.indexOf(":", num_1 + 1);
     String S_pwd = recivedData.substring(num_1+1,num_2);
-    num_1 = recivedData.indexOf(":", num_2 + 1);
-    String S_IP = recivedData.substring(num_2+1,num_1);
-    num_2 = recivedData.indexOf(":", num_1 + 1);
-    String S_IPR = recivedData.substring(num_1+1,recivedData.length()-1);
+    String S_Name = recivedData.substring(num_2+1,recivedData.length()-1);
     jdata.ssid = S_login;
     Serial.print("Ext.AP: SSID= "); Serial.print(jdata.ssid);
     jdata.password = S_pwd;
     Serial.print(" / Password= "); Serial.print(jdata.password);
-    jdata.IP= S_IP;
-    Serial.print(" / IP= "); Serial.print(jdata.IP);
-    jdata.IPR = S_IPR;
-    Serial.print(" / IP_gateway= "); Serial.println(jdata.IPR);
+    jdata.Name= S_Name;
+    Serial.print(" / Name= "); Serial.print(jdata.Name);
   }
   return jdata; 
 }
@@ -386,7 +382,7 @@ String EEPROM_String_read(int addr)
   data[len]='\0';
   return String(data);
 }
-bool WiFi_connect(Parameters *jdata, WiFiServer *server)
+bool STA_connect(Parameters *jdata, WiFiServer *server)
 {
   static uint16_t Dstart = 200;
   if (SmartDelay(Dstart)==1)
@@ -402,6 +398,14 @@ bool WiFi_connect(Parameters *jdata, WiFiServer *server)
   {
     Serial.print("WiFi connected / "); Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
+    // Set up mDNS 
+    if (!MDNS.begin(mDNS_name)) 
+    {
+        Serial.println("Error setting up MDNS!");
+        return 0;
+    }
+    Serial.print("mDNS-responder: ");
+    Serial.println(mDNS_name);
     server->begin();
     return 1;
   }

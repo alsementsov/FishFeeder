@@ -24,8 +24,8 @@ using namespace std;
 #define KF_Q 0.1 
 #define KF_R 0.01
 #define T_CLEAN 20000  
-#define TH_CLEAN 5000
-#define WIFI_TIMEOUT 4000
+#define TH_CLEAN 4000
+#define WIFI_TIMEOUT 5000
 // Описание битов регистра статуса
 #define STATUS_ADJUSTMENT 0 // 0 - without adj feeding timings
 #define STATUS_CLEAN 1 // 0 - нет Очистки 
@@ -42,8 +42,7 @@ using namespace std;
 
 struct Parameters
 {   
-    String IP;
-    String IPR;
+    String Name;
     int Hour_start;
     int Minute_start;
     int Hour_end;
@@ -83,7 +82,7 @@ uint8_t ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timi
 struct Parameters ReadParameters();
 void EEPROM_String_write(int addr,String data);
 String EEPROM_String_read(int addr);
-bool WiFi_connect(Parameters *jdata, WiFiServer *server);
+bool STA_connect(Parameters *jdata, WiFiServer *server);
 void RTC_init(Parameters *jdata,RTC_DS3231 *rtc);
 bool SmartDelay (const unsigned long Tdelay);
 long Kalman_filter(long val,float Q);
