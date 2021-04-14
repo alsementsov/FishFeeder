@@ -1,4 +1,4 @@
-#define Version 26 //Version AP
+#define Version 27 //Version AP
 #include <Arduino.h>
 #include <HX711.h>
 #include <WiFi.h>
@@ -25,10 +25,6 @@ long Consumption_temp;
 unsigned long Tstart_clean=0;
 long Wstart_clean=0;
 unsigned long t;
-
-//IPAddress local_IP;
-//IPAddress gateway_IP; 
-//IPAddress subnet(255, 255, 255, 0); // По умолчанию
 uint8_t cmd;
 button button_AP(PIN_RESET_AP); 
 
@@ -55,9 +51,10 @@ void setup() {
   if (jdata.Mode ==1)
   {
       t = millis();
+      Connect_ExtAP = STA_connect(&jdata, &server,10);
       while ((Connect_ExtAP==0)&&((millis()-t)<15000))    
       {
-        Connect_ExtAP = STA_connect(&jdata, &server);  
+        Connect_ExtAP = STA_connect(&jdata, &server,5000);  
       }
       if (Connect_ExtAP==0) 
       { jdata.Mode = 0; } 
@@ -78,7 +75,7 @@ void setup() {
       server.begin();
   }
   // Расчет таймингов кормления
-  Calculate_timings(&jdata,&Feed_timings);
+  Calculate_timings(&jdata,&Feed_timings,0);
   // Настройка ТЕНЗОДАТЧИКА
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
   delay(1000); 
@@ -266,8 +263,8 @@ void loop() {
   cmd=0;
   if ((jdata.Mode==1)&&(WiFi.status() != WL_CONNECTED)) // STA mode
   {
-    WiFi.reconnect(); 
-    Serial.println("AP is lost. Trying to AP reconnect...");
+    //Serial.println("AP is lost. Trying to AP reconnect...");
+    Connect_ExtAP = STA_connect(&jdata, &server,10000); 
   }
   else
   {
@@ -275,7 +272,6 @@ void loop() {
     s = Client_connect(&rtc,&jdata,&server,&scale);
     cmd = ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
   }
-
   /////// Обаботка кнопки ////////
   if (button_AP.click()){
     cmd=10;
@@ -289,22 +285,18 @@ void loop() {
     if (jdata.Mode==1) // STA mode
     {
       t = millis();
+      WiFi.disconnect();
+      Connect_ExtAP = STA_connect(&jdata, &server,10);
       while ((Connect_ExtAP==0)&&((millis()-t) < 4000))    
       {
-        Connect_ExtAP = STA_connect(&jdata, &server);  
+        Connect_ExtAP = STA_connect(&jdata, &server,6000);  
       }
       if (Connect_ExtAP==0) 
       { 
         Serial.print("Error with connect as STA = ");Serial.println(jdata.ssid +" / "+jdata.password+" ; Name(mDNS) = "+jdata.Name);
         jdata.Mode = 0; 
-      } 
-      else
-      {
-        if (WiFi.getAutoConnect() != true) WiFi.setAutoConnect(true);  //on power-on automatically connects to last used hwAP
-        WiFi.setAutoReconnect(true);
-        Serial.print("Start as STA = ");Serial.println(jdata.ssid +" / "+jdata.password+" ; Name(mDNS) = "+jdata.Name);
-      } 
-    }
+      }
+    } 
     if (jdata.Mode==0) // AP mode
     {
       IPAddress apIP(192, 168, 0, 1);

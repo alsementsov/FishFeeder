@@ -152,7 +152,8 @@ long MeausureWeight(HX711 *scale)
   else
     return -1;
 }
-void Calculate_timings(Parameters *jdata, timings *Feed_timings){
+void Calculate_timings(Parameters *jdata, timings *Feed_timings, bool terminal=0)
+{
   Feed_timings->Tstart = (jdata->Hour_start*3600) + (jdata->Minute_start*60);//
   Feed_timings->Tend = (jdata->Hour_end*3600) + (jdata->Minute_end*60);
   Feed_timings->T = ((Feed_timings->Tend-Feed_timings->Tstart)*1000)/jdata->NperDay;// Период между выбросами в миллисекундах
@@ -160,13 +161,16 @@ void Calculate_timings(Parameters *jdata, timings *Feed_timings){
   Feed_timings->Duration = (Feed_timings->WperSample*1000)/jdata->Consumption; 
   Feed_timings->WperSample_cur = Feed_timings->WperSample;
   Feed_timings->Qr = KF_Q/jdata->NperDay;
-  Serial.print("Tstart(sec) = ");Serial.println(Feed_timings->Tstart);
-  Serial.print("Tend(sec) = ");Serial.println(Feed_timings->Tend);
-  Serial.print("T(msec) = ");Serial.println(Feed_timings->T);
-  Serial.print("Duration(msec) = ");Serial.println(Feed_timings->Duration);
-  Serial.print("WperSample(mg) = ");Serial.println(Feed_timings->WperSample);
-  Serial.print("WperSample_cur(mg) = ");Serial.println(Feed_timings->WperSample_cur);
-  Serial.print("Consumption(mg/sec) = ");Serial.println(jdata->Consumption);
+  if (terminal)
+  {
+      Serial.print("Tstart(sec) = ");Serial.println(Feed_timings->Tstart);
+      Serial.print("Tend(sec) = ");Serial.println(Feed_timings->Tend);
+      Serial.print("T(msec) = ");Serial.println(Feed_timings->T);
+      Serial.print("Duration(msec) = ");Serial.println(Feed_timings->Duration);
+      Serial.print("WperSample(mg) = ");Serial.println(Feed_timings->WperSample);
+      Serial.print("WperSample_cur(mg) = ");Serial.println(Feed_timings->WperSample_cur);
+      Serial.print("Consumption(mg/sec) = ");Serial.println(jdata->Consumption);
+  }
 }
 // Парсинг запроса
 uint8_t ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timings,HX711 *scale)
@@ -222,7 +226,7 @@ uint8_t ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timi
       EEPROM.write(7,lowByte(jdata->WperDay));
       EEPROM.commit();
       Serial.println(" -> Mode has been updated:");
-      Calculate_timings(jdata,Feed_timings);
+      Calculate_timings(jdata,Feed_timings,0);
     }
     // 3 - Тарировка (нужно чтобы измерялся вес и записывался в EEPROM а также вычитался при старте из текущего веса)
     else if (cmd==3)
@@ -351,7 +355,7 @@ struct Parameters ReadParameters()
     jdata.password = S_pwd;
     Serial.print(" / Password= "); Serial.print(jdata.password);
     jdata.Name= S_Name;
-    Serial.print(" / Name= "); Serial.print(jdata.Name);
+    Serial.print(" / Name= "); Serial.println(jdata.Name);
   }
   return jdata; 
 }
@@ -382,12 +386,10 @@ String EEPROM_String_read(int addr)
   data[len]='\0';
   return String(data);
 }
-bool STA_connect(Parameters *jdata, WiFiServer *server)
+bool STA_connect(Parameters *jdata, WiFiServer *server,uint16_t DelayStart)
 {
-  static uint16_t Dstart = 200;
-  if (SmartDelay(Dstart)==1)
+  if (SmartDelay(DelayStart)==1)
   { 
-    Dstart = WIFI_TIMEOUT;
     String temp_ssid = jdata->ssid;
     String temp_pwd = jdata->password;
     Serial.print("-----> Connecting to: ");Serial.println(&temp_ssid[0]);
@@ -399,13 +401,15 @@ bool STA_connect(Parameters *jdata, WiFiServer *server)
     Serial.print("WiFi connected / "); Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
     // Set up mDNS 
-    if (!MDNS.begin(mDNS_name)) 
+    String temp_name = jdata->Name;
+    MDNS.end();
+    if (!MDNS.begin(&temp_name[0])) 
     {
-        Serial.println("Error setting up MDNS!");
-        return 0;
+      Serial.println("Error setting up MDNS!");
+      return 0;
     }
     Serial.print("mDNS-responder: ");
-    Serial.println(mDNS_name);
+    Serial.println(jdata->Name);
     server->begin();
     return 1;
   }
