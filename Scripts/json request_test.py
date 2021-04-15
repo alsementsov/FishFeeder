@@ -4,15 +4,16 @@ import json
 
 url = 'http://192.168.0.111'
 
+
 #Choose command
-SW = 9
+SW = 0
 
 if SW==0:
     payload = {'Command':0}
 elif SW==1:
-    payload = {'Command':1,'Time':'2020-08-29T13:40:00'}
+    payload = {'Command':1,'Time':'2021-04-14T13:40:00'}
 elif SW==2:
-    payload = {'Command':2,'EjectStart':'01:30','EjectEnd':'07:00','EjectFreq':100,'EjectWeight':700}
+    payload = {'Command':2,'EjectStart':'1:30','EjectEnd':'5:30','EjectFreq':100,'EjectWeight':700}
 elif SW==3:
     payload = {'Command':3} # Тарировка  
 elif SW==4:
@@ -37,5 +38,5 @@ resp = requests.post(url, data=json.dumps(payload), headers=headers)
 print('HTTP Status: ',resp.status_code)
 print(resp.text)
 answer = resp.json() 
-w=int(answer['Weight'])/1000
-print('Weight: '+str(round(w)))
+w=int(answer['Status'])
+print('Status: '+str(bin(round(w))))
