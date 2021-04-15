@@ -1,4 +1,4 @@
-#define Version 25 //Version AP
+#define Version 28 //Version AP
 #include <Arduino.h>
 #include <HX711.h>
 #include <WiFi.h>
