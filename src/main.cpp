@@ -1,4 +1,4 @@
-#define Version 20 //Version
+#define Version 25 //Version AP
 #include <Arduino.h>
 #include <HX711.h>
 #include <WiFi.h>
@@ -18,42 +18,73 @@ int N = 0;
 unsigned long delta =0;
 long Weight_before;
 uint16_t NoChanging_cnt=0;
-bool firstloop;
-bool Start_with_AP=0;
+bool Connect_ExtAP=0;
 bool feed = 0;
 bool flag_calc = 0;
 long Consumption_temp;
 unsigned long Tstart_clean=0;
 long Wstart_clean=0;
+bool IP_flag;
+bool IPR_flag;
+IPAddress local_IP;
+IPAddress gateway_IP; 
+IPAddress subnet(255, 255, 255, 0); // По умолчанию
+uint8_t cmd;
+button button_AP(PIN_RESET_AP); 
+unsigned long t;
 
 ///////////////////////////// SETUP ////////////////////////////////////////////////////
 void setup() {
   //Обнуление статуса ошибок при старта
   Serial.begin(115200);
+  pinMode (PIN_RESET_AP,INPUT_PULLUP);
   pinMode(MOTORPIN, OUTPUT); 
-  pinMode(LED1, OUTPUT);
-  pinMode(LED2, OUTPUT);
-  pinMode(LED3, OUTPUT);
-  pinMode(LEDEXT, OUTPUT);
-  digitalWrite(LED1,LOW);
-  digitalWrite(LED2,LOW);
-  digitalWrite(LED3,HIGH);
-  digitalWrite(LEDEXT,LOW);
+  pinMode(LED1, OUTPUT);  pinMode(LED2, OUTPUT);
+  pinMode(LED3, OUTPUT);  pinMode(LEDEXT, OUTPUT);
+  digitalWrite(LED1,LOW);  digitalWrite(LED2,LOW);
+  digitalWrite(LED3,HIGH);  digitalWrite(LEDEXT,LOW);
    
   EEPROM.begin(64);     // set the LED pin mode
   delay(10);
   //Version
   Serial.print("Version: ");Serial.println(Version);
-  // RTC starting
-  RTC_init(&jdata,&rtc);
   //////// READ PARAMETERS from EEPROM ////////
   jdata = ReadParameters();
-  Serial.print("ID: ");Serial.println(jdata.ID_f);
-  // WIFi start...
-  unsigned long t = millis();
-  while ((Start_with_AP==0)&&(millis()-t<10000))
-  {
-    Start_with_AP = WiFi_connect(&jdata, &server);
+  // RTC starting
+  RTC_init(&jdata,&rtc); // было выше чтения параметров
+  Serial.print("IP: ");Serial.println(jdata.IP);
+  Serial.print("IP_gateway: ");Serial.println(jdata.IPR);
+  
+  // Station starting
+  if (jdata.Mode ==1) {
+    // Задаем статический IP-адрес:
+    IP_flag = local_IP.fromString(jdata.IP);
+    // Задаем IP-адрес сетевого шлюза:
+    IPR_flag = gateway_IP.fromString(jdata.IPR);
+    // Настраиваем статический IP-адрес:
+    if ((!WiFi.config(local_IP, gateway_IP, subnet))||(IP_flag==0)||(IPR_flag==0)) 
+    {
+      Serial.println("-----> ERROR  - STA Failed to configure !"); // Если есть ошибка в конфигурации сети
+      jdata.Mode=0; // переключаемся на дефолтную AP
+    }
+    else
+    {
+      t=millis();
+      Connect_ExtAP = WiFi_connect(&jdata, &server,100);
+      while ((Connect_ExtAP==0)&&((millis()-t)<15000))    
+      {
+        Connect_ExtAP = WiFi_connect(&jdata, &server,5000);  
+      }
+     }
+  }
+  if (jdata.Mode ==0){
+    //AP start
+      IPAddress apIP(192, 168, 0, 1);
+      WiFi.mode(WIFI_AP);
+      WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+      WiFi.softAP(OWN_SSID, OWN_PWD);
+      Serial.print("-----> WIFI_AP:   ");Serial.println(WiFi.softAPIP());
+      server.begin();
   }
   // Расчет таймингов кормления
   Calculate_timings(&jdata,&Feed_timings);
@@ -69,13 +100,11 @@ void setup() {
     bitSet(jdata.Status,STATUS_ERROR_SCALE);// Запись ошибки ВЕСОВ
     Serial.println("-- Scale connection ERROR ! --");
   }
-  firstloop = 1;
-  if (WiFi.getAutoConnect() != true) WiFi.setAutoConnect(true);  //on power-on automatically connects to last used hwAP
-  WiFi.setAutoReconnect(true);
   Consumption_temp = jdata.Consumption;
 }
 //////////////////////////////// LOOP ////////////////////////////////////////////////////////
-void loop() { 
+void loop() {
+
   // ******** FEEDING **********
   // if there are no Clean or global STOP
   if ((bitRead(jdata.Status,STATUS_CLEAN)==0)&&(bitRead(jdata.Status,STATUS_STOP)==0)) 
@@ -239,19 +268,61 @@ void loop() {
       Tstart_clean=0;
     }
   }
+
+  //////////////////////////////////////////////////////
   ///////////////////// WIFI ///////////////////////////
-  if (firstloop ==1)  {firstloop = 0;}
-  else if (Start_with_AP==0)
-    Start_with_AP =  WiFi_connect(&jdata, &server);
-  else if (WiFi.status() != WL_CONNECTED)
+  //////////////////////////////////////////////////////
+  cmd=0;
+  if ((jdata.Mode==1)&&(WiFi.status() != WL_CONNECTED)) // STA mode
   {
-    WiFi.reconnect(); 
-    Serial.println("AP is lost. Trying to AP reconnect...");
+    Connect_ExtAP =  WiFi_connect(&jdata, &server,5000);
   }
   else
   {
     String s;
     s = Client_connect(&rtc,&jdata,&server,&scale);
-    ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
+    cmd = ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
+  }
+  /////// Обаботка кнопки ////////
+  if (button_AP.click()){
+    cmd=10;
+    jdata.Mode=0;
+    EEPROM.write(19,0);
+    EEPROM.commit();
+  }
+  /////// Если была команда смены режима wi-fi //////
+  if (cmd==10)
+  {
+    if (jdata.Mode==1) // STA mode
+    {
+      IP_flag = local_IP.fromString(jdata.IP);
+      IPR_flag = gateway_IP.fromString(jdata.IPR);
+      // Настраиваем статический IP-адрес:
+      if ((!WiFi.config(local_IP, gateway_IP, subnet))||(IP_flag==0)||(IPR_flag==0)) 
+      {
+        Serial.println("-----> ERROR  - STA Failed to configure !"); // Если есть ошибка в конфигурации сети
+        jdata.Mode=0; // остаемся на дефолтной AP
+      }
+      else
+      {
+        //WiFi.begin(&temp_ssid[0],&temp_pwd[0]); //новые параметры из jdata
+        t=millis();
+        Connect_ExtAP = WiFi_connect(&jdata, &server,10);
+        while ((Connect_ExtAP==0)&&((millis()-t)<5000))    
+        {
+          Connect_ExtAP = WiFi_connect(&jdata, &server,6000);  
+        }
+        Serial.print("Start as STA = ");Serial.println(jdata.ssid +" / "+jdata.password+" / IP= "+jdata.IP+" / IPg="+jdata.IPR);
+      }
+    }
+    if (jdata.Mode==0) // AP mode
+    {
+      IPAddress apIP(192, 168, 0, 1);
+      WiFi.mode(WIFI_AP);
+      WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+      WiFi.softAP(OWN_SSID, OWN_PWD);
+      Serial.print("Start as AP: ");Serial.println(WiFi.softAPIP());
+      server.begin();
+    }
   }
 }

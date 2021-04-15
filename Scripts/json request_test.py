@@ -1,36 +1,34 @@
 # -*- coding: utf-8 -*-
 import requests
 import json
-url = 'http://192.168.0.110'
+
+url = 'http://192.168.0.111'
 
 #Choose command
-SW=6
+SW = 9
 
 if SW==0:
-    payload = {'ID': 1,'Command':0}
+    payload = {'Command':0}
 elif SW==1:
-    payload = {'ID': 1,'Command':1,'Year':2020, 'Month':6, 'Day':24, 'Hour':12, 'Minute':40}
+    payload = {'Command':1,'Time':'2020-08-29T13:40:00'}
 elif SW==2:
-    payload = {'ID': 1,'Command':2,'StartHour':23,'StartMinute':15,'EndHour':23,'EndMinute':35,'Freq_day':20,'Weight_day':100}
+    payload = {'Command':2,'EjectStart':'01:30','EjectEnd':'07:00','EjectFreq':100,'EjectWeight':700}
 elif SW==3:
-    payload = {'ID': 255,'Command':3,'IDnew':1}
+    payload = {'Command':3} # Тарировка  
 elif SW==4:
-    payload = {'ID': 1,'Command':4} # Тарировка  
+    payload = {'Command':4} # Калибровка
 elif SW==5:
-    payload = {'ID': 1,'Command':5} # Калибровка
+    payload = {'Command':5} # Старт очистки
 elif SW==6:
-    payload = {'ID': 1,'Command':6} # Старт очистки
+    payload = {'Command':6} # Стоп очистки
 elif SW==7:
-    payload = {'ID': 1,'Command':7} # Стоп очистки
+    payload = {'Command':7} # Глобальный СТОП 
 elif SW==8:
-    payload = {'ID': 1,'Command':8} # Глобальный СТОП 
+    payload = {'Command':8} # Отключение СТОПа - ГЛОБАЛЬНЫЙ СТАРТ
 elif SW==9:
-    payload = {'ID': 1,'Command':9} # Отключение СТОПа - ГЛОБАЛЬНЫЙ СТАРТ
+    payload = {'Command':9,'DefConsump':1000,'Status':1} # Расход по умолчанию и режим автокоррекции
 elif SW==10:
-    payload = {'ID': 1,'Command':10,'DefConsump':1000,'Status':1} # Consumption  
-elif SW==11:
-    payload = {'ID': 1,'Command':11,'SSID':'ABS','PASSWORD':'13121985'} # AP
-
+    payload = {'Command':10,'SSID':'ABS','Password':'13121985','Mode':'1','IP':'192.168.0.111','IPR':'192.168.0.1'} # AP
 
 headers = {'content-type': 'application/json'}
 
@@ -41,6 +39,3 @@ print(resp.text)
 answer = resp.json() 
 w=int(answer['Weight'])/1000
 print('Weight: '+str(round(w)))
-print('Start = ',answer['StartHour'],':',answer['StartMinute'])
-print('End   = ',answer['EndHour'],':',answer['EndMinute'])
-print('Частота = ',answer['Freq_day'],' / Вес за день = ',answer['Weight_day'])
