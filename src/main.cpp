@@ -31,6 +31,7 @@ IPAddress gateway_IP;
 IPAddress subnet(255, 255, 255, 0); // По умолчанию
 uint8_t cmd;
 button button_AP(PIN_RESET_AP); 
+unsigned long t;
 
 ///////////////////////////// SETUP ////////////////////////////////////////////////////
 void setup() {
@@ -53,10 +54,9 @@ void setup() {
   RTC_init(&jdata,&rtc); // было выше чтения параметров
   Serial.print("IP: ");Serial.println(jdata.IP);
   Serial.print("IP_gateway: ");Serial.println(jdata.IPR);
+  
   // Station starting
-
   if (jdata.Mode ==1) {
-    unsigned long t = millis();
     // Задаем статический IP-адрес:
     IP_flag = local_IP.fromString(jdata.IP);
     // Задаем IP-адрес сетевого шлюза:
@@ -67,13 +67,14 @@ void setup() {
       Serial.println("-----> ERROR  - STA Failed to configure !"); // Если есть ошибка в конфигурации сети
       jdata.Mode=0; // переключаемся на дефолтную AP
     }
-    else{
-      while ((Connect_ExtAP==0)&&((millis()-t)<10000))    
+    else
+    {
+      t=millis();
+      Connect_ExtAP = WiFi_connect(&jdata, &server,100);
+      while ((Connect_ExtAP==0)&&((millis()-t)<15000))    
       {
-        Connect_ExtAP = WiFi_connect(&jdata, &server);  
+        Connect_ExtAP = WiFi_connect(&jdata, &server,5000);  
       }
-      if (WiFi.getAutoConnect() != true) WiFi.setAutoConnect(true);  //on power-on automatically connects to last used hwAP
-      WiFi.setAutoReconnect(true);
      }
   }
   if (jdata.Mode ==0){
@@ -272,22 +273,9 @@ void loop() {
   ///////////////////// WIFI ///////////////////////////
   //////////////////////////////////////////////////////
   cmd=0;
-  if (jdata.Mode==1) // STA mode
+  if ((jdata.Mode==1)&&(WiFi.status() != WL_CONNECTED)) // STA mode
   {
-    if (Connect_ExtAP==0){
-      Connect_ExtAP =  WiFi_connect(&jdata, &server);
-    }
-    else if (WiFi.status() != WL_CONNECTED)
-    {
-      WiFi.reconnect(); 
-      Serial.println("AP is lost. Trying to AP reconnect...");
-    }
-    else
-    {
-      String s;
-      s = Client_connect(&rtc,&jdata,&server,&scale);
-      cmd = ParseJSON(&s,&rtc,&jdata,&Feed_timings,&scale);
-    }
+    Connect_ExtAP =  WiFi_connect(&jdata, &server,5000);
   }
   else
   {
@@ -310,14 +298,20 @@ void loop() {
       IP_flag = local_IP.fromString(jdata.IP);
       IPR_flag = gateway_IP.fromString(jdata.IPR);
       // Настраиваем статический IP-адрес:
-      if ((!WiFi.config(local_IP, gateway_IP, subnet))||(IP_flag==0)||(IPR_flag==0)) {
+      if ((!WiFi.config(local_IP, gateway_IP, subnet))||(IP_flag==0)||(IPR_flag==0)) 
+      {
         Serial.println("-----> ERROR  - STA Failed to configure !"); // Если есть ошибка в конфигурации сети
         jdata.Mode=0; // остаемся на дефолтной AP
       }
       else
       {
         //WiFi.begin(&temp_ssid[0],&temp_pwd[0]); //новые параметры из jdata
-        Connect_ExtAP =  WiFi_connect(&jdata, &server);
+        t=millis();
+        Connect_ExtAP = WiFi_connect(&jdata, &server,10);
+        while ((Connect_ExtAP==0)&&((millis()-t)<5000))    
+        {
+          Connect_ExtAP = WiFi_connect(&jdata, &server,6000);  
+        }
         Serial.print("Start as STA = ");Serial.println(jdata.ssid +" / "+jdata.password+" / IP= "+jdata.IP+" / IPg="+jdata.IPR);
       }
     }

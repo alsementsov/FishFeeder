@@ -386,12 +386,10 @@ String EEPROM_String_read(int addr)
   data[len]='\0';
   return String(data);
 }
-bool WiFi_connect(Parameters *jdata, WiFiServer *server)
+bool WiFi_connect(Parameters *jdata, WiFiServer *server,uint16_t DelayTime)
 {
-  static uint16_t Dstart = 200;
-  if (SmartDelay(Dstart)==1)
+  if (SmartDelay(DelayTime)==1)
   { 
-    Dstart = WIFI_TIMEOUT;
     String temp_ssid = jdata->ssid;
     String temp_pwd = jdata->password;
     Serial.print("-----> Connecting to: ");Serial.println(&temp_ssid[0]);
@@ -405,7 +403,8 @@ bool WiFi_connect(Parameters *jdata, WiFiServer *server)
     server->begin();
     return 1;
   }
-  else {
+  else 
+  {
     return 0;
   }
 }
