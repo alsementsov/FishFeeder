@@ -208,7 +208,6 @@ uint8_t ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timi
       jdata->Minute_end = sval.toInt();
       jdata->NperDay = doc["EjectFreq"];
       jdata->WperDay = doc["EjectWeight"];
-      //EEPROM.begin(9);
       EEPROM.write(0,jdata->Hour_start);
       EEPROM.write(1,jdata->Minute_start);
       EEPROM.write(2,jdata->Hour_end);
@@ -217,6 +216,16 @@ uint8_t ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timi
       EEPROM.write(5,lowByte(jdata->NperDay));
       EEPROM.write(6,highByte(jdata->WperDay));
       EEPROM.write(7,lowByte(jdata->WperDay));
+      jdata->Consumption = doc["DefConsump"];
+      bool adjust_mode = doc["Adjust"];
+      if (adjust_mode==1)
+        bitSet(jdata->Status,STATUS_ADJUSTMENT);
+      else
+        bitClear(jdata->Status,STATUS_ADJUSTMENT);
+      EEPROM.write(8,highByte(jdata->Consumption));
+      EEPROM.write(9,lowByte(jdata->Consumption));
+      EEPROM.write(10,jdata->Status);
+      Serial.println(" -> NEW Consumption= "+String(jdata->Consumption)+" / Adjustment_mode= "+String(bitRead(jdata->Status,STATUS_ADJUSTMENT)));
       EEPROM.commit();
       Serial.println(" -> Mode has been updated:");
       Calculate_timings(jdata,Feed_timings);
@@ -266,30 +275,18 @@ uint8_t ParseJSON(String *s,RTC_DS3231 *rtc,Parameters *jdata,timings *Feed_timi
       bitClear(jdata->Status,STATUS_STOP);
       Serial.print(" -> START...");
     }
-    // 9 - Обновление расхода по умолчанию (CONSUMPTION)
+    //9 - SSID+PWD
     else if (cmd== 9)
-    {
-      jdata->Consumption = doc["DefConsump"];
-      uint8_t status_from_server = doc["Status"];
-      if ((bitRead(status_from_server,STATUS_ADJUSTMENT))==1)
-        bitSet(jdata->Status,STATUS_ADJUSTMENT);
-      else
-        bitClear(jdata->Status,STATUS_ADJUSTMENT);
-      //EEPROM.begin(12);
-      EEPROM.write(8,highByte(jdata->Consumption));
-      EEPROM.write(9,lowByte(jdata->Consumption));
-      EEPROM.write(10,jdata->Status);
-      EEPROM.commit();
-      Serial.println(" -> NEW Consumption= "+String(jdata->Consumption)+" / Adjustment_mode= "+String(bitRead(jdata->Status,STATUS_ADJUSTMENT)));
-    }
-    //10 - SSID+PWD
-    else if (cmd== 10)
     {
       const char *ch_ssid = doc["SSID"];
       const char *ch_pwd = doc["Password"];
       jdata->ssid = String(ch_ssid);
       jdata->password = String(ch_pwd);
       jdata->Mode = doc["Mode"];
+      if (jdata->Mode==1)
+        bitSet(jdata->Status,STATUS_MODE);
+      else
+        bitClear(jdata->Status,STATUS_MODE);
       EEPROM.write(19,doc["Mode"]);
       const char *ch_IP = doc["IP"];
       const char *ch_IPR = doc["IPR"];
@@ -330,10 +327,12 @@ struct Parameters ReadParameters()
   if (jdata.Mode > 1){jdata.Mode = 0;} //AP for default state
   // AP + SSID/PWD
   // Если нет записанной сети - AP mode=0
-  if (jdata.Mode == 0){
+  if (jdata.Mode == 0)
+  {
     jdata.password = OWN_PWD;
     jdata.ssid = OWN_SSID;
     Serial.println("Start as default AP: "+jdata.ssid+" / "+jdata.password);
+    bitClear(jdata.Status,STATUS_MODE);
   }
   // Station mode
   else
@@ -356,6 +355,7 @@ struct Parameters ReadParameters()
     Serial.print(" / IP= "); Serial.print(jdata.IP);
     jdata.IPR = S_IPR;
     Serial.print(" / IP_gateway= "); Serial.println(jdata.IPR);
+    bitSet(jdata.Status,STATUS_MODE);
   }
   return jdata; 
 }

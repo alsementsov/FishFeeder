@@ -2,8 +2,7 @@
 import requests
 import json
 
-url = 'http://192.168.0.111'
-
+url = 'http://192.168.0.112'
 
 #Choose command
 SW = 0
@@ -11,9 +10,9 @@ SW = 0
 if SW==0:
     payload = {'Command':0}
 elif SW==1:
-    payload = {'Command':1,'Time':'2021-04-14T13:40:00'}
+    payload = {'Command':1,'Time':'2021-04-15T16:40:00'}
 elif SW==2:
-    payload = {'Command':2,'EjectStart':'1:30','EjectEnd':'5:30','EjectFreq':100,'EjectWeight':700}
+    payload = {'Command':2,'EjectStart':'1:30','EjectEnd':'5:30','EjectFreq':100,'EjectWeight':700,'Adjust':1,'DefConsump':1000}
 elif SW==3:
     payload = {'Command':3} # Тарировка  
 elif SW==4:
@@ -27,9 +26,7 @@ elif SW==7:
 elif SW==8:
     payload = {'Command':8} # Отключение СТОПа - ГЛОБАЛЬНЫЙ СТАРТ
 elif SW==9:
-    payload = {'Command':9,'DefConsump':1000,'Status':1} # Расход по умолчанию и режим автокоррекции
-elif SW==10:
-    payload = {'Command':10,'SSID':'ABS','Password':'13121985','Mode':'1','IP':'192.168.0.111','IPR':'192.168.0.1'} # AP
+    payload = {'Command':9,'SSID':'ABS','Password':'13121985','Mode':'1','IP':'192.168.0.112','IPR':'192.168.0.1'} # AP
 
 headers = {'content-type': 'application/json'}
 

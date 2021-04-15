@@ -66,6 +66,7 @@ void setup() {
     {
       Serial.println("-----> ERROR  - STA Failed to configure !"); // Если есть ошибка в конфигурации сети
       jdata.Mode=0; // переключаемся на дефолтную AP
+      bitClear(jdata.Status,STATUS_MODE);
     }
     else
     {
@@ -287,6 +288,7 @@ void loop() {
   if (button_AP.click()){
     cmd=10;
     jdata.Mode=0;
+    bitClear(jdata.Status,STATUS_MODE);
     EEPROM.write(19,0);
     EEPROM.commit();
   }
@@ -302,6 +304,7 @@ void loop() {
       {
         Serial.println("-----> ERROR  - STA Failed to configure !"); // Если есть ошибка в конфигурации сети
         jdata.Mode=0; // остаемся на дефолтной AP
+        bitClear(jdata.Status,STATUS_MODE);
       }
       else
       {
