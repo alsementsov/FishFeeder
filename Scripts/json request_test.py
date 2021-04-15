@@ -2,7 +2,7 @@
 import requests
 import json
 
-url = 'http://192.168.0.112'
+url = 'http://192.168.0.111'
 
 #Choose command
 SW = 0
@@ -12,7 +12,7 @@ if SW==0:
 elif SW==1:
     payload = {'Command':1,'Time':'2021-04-15T16:40:00'}
 elif SW==2:
-    payload = {'Command':2,'EjectStart':'1:30','EjectEnd':'5:30','EjectFreq':100,'EjectWeight':700,'Adjust':1,'DefConsump':1000}
+    payload = {'Command':2,'EjectStart':'00:30','EjectEnd':'06:30','EjectFreq':150,'EjectWeight':600,'Adjust':1,'DefConsump':1000}
 elif SW==3:
     payload = {'Command':3} # Тарировка  
 elif SW==4:
@@ -26,12 +26,10 @@ elif SW==7:
 elif SW==8:
     payload = {'Command':8} # Отключение СТОПа - ГЛОБАЛЬНЫЙ СТАРТ
 elif SW==9:
-    payload = {'Command':9,'SSID':'ABS','Password':'13121985','Mode':'1','IP':'192.168.0.112','IPR':'192.168.0.1'} # AP
+    payload = {'Command':9,'SSID':'ABS','Password':'13121985','Mode':'1','IP':'192.168.0.111','IPR':'192.168.0.1'} # AP
 
 headers = {'content-type': 'application/json'}
-
 resp = requests.post(url, data=json.dumps(payload), headers=headers)
-
 print('HTTP Status: ',resp.status_code)
 print(resp.text)
 answer = resp.json() 

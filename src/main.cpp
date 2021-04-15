@@ -293,7 +293,7 @@ void loop() {
     EEPROM.commit();
   }
   /////// Если была команда смены режима wi-fi //////
-  if (cmd==10)
+  if (cmd==9)
   {
     if (jdata.Mode==1) // STA mode
     {
